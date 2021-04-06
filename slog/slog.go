@@ -28,6 +28,19 @@ const (
 	severityEmergency severity = "EMERGENCY"
 )
 
+var (
+	std     = newLogger(os.Stdout)
+	base    = std.entry()
+	sources = make(map[uintptr]*SourceLocation)
+)
+
+// Logger used to write structured logs in a thread-safe manner to a given output.
+type Logger struct {
+	mu      sync.Mutex // ensures atomic writes
+	out     io.Writer
+	project string
+}
+
 // Entry with additional metadata included.
 // See https://cloud.google.com/logging/docs/agent/configuration#special-fields for reference.
 type Entry struct {
@@ -43,6 +56,7 @@ type Entry struct {
 	TraceSampled   bool              `json:"logging.googleapis.com/trace_sampled,omitempty"`
 }
 
+// SourceLocation that originated the log call.
 type SourceLocation struct {
 	File     string `json:"file,omitempty"`
 	Line     string `json:"line,omitempty"`
@@ -100,6 +114,7 @@ func (e *Entry) EndOperation() {
 	e.Operation = nil
 }
 
+// WithOperation details included in all logs written for a given Entry.
 func (e *Entry) WithOperation(id, producer string) *Entry {
 	e.Operation = &Operation{
 		ID:       id,
@@ -110,14 +125,17 @@ func (e *Entry) WithOperation(id, producer string) *Entry {
 	return e
 }
 
+// WithOperation details included in all logs written for a given Entry.
 func WithOperation(id, producer string) *Entry {
 	return std.entry().WithOperation(id, producer)
 }
 
+// WithOperation details included in all logs written for a given Entry.
 func (l *Logger) WithOperation(id, producer string) *Entry {
 	return l.entry().WithOperation(id, producer)
 }
 
+// WithSpan details included for a given Trace.
 func (e *Entry) WithSpan(s *trace.Span) *Entry {
 	e.Trace = fmt.Sprint("projects/", e.logger.project, "/traces/", s.SpanContext().TraceID)
 	e.SpanID = s.SpanContext().SpanID.String()
@@ -125,14 +143,17 @@ func (e *Entry) WithSpan(s *trace.Span) *Entry {
 	return e
 }
 
+// WithSpan details included for a given Trace.
 func WithSpan(s *trace.Span) *Entry {
 	return std.entry().WithSpan(s)
 }
 
+// WithSpan details included for a given Trace.
 func (l *Logger) WithSpan(s *trace.Span) *Entry {
 	return l.entry().WithSpan(s)
 }
 
+// WithLabel including details for a given Entry.
 func (e *Entry) WithLabel(k string, v interface{}) *Entry {
 	if e.Labels == nil {
 		e.Labels = make(map[string]string)
@@ -141,18 +162,14 @@ func (e *Entry) WithLabel(k string, v interface{}) *Entry {
 	return e
 }
 
+// WithLabel including details for a given Entry.
 func WithLabel(k string, v interface{}) *Entry {
 	return std.entry().WithLabel(k, v)
 }
 
+// WithLabel including details for a given Entry.
 func (l *Logger) WithLabel(k string, v interface{}) *Entry {
 	return l.entry().WithLabel(k, v)
-}
-
-type Logger struct {
-	mu      sync.Mutex // ensures atomic writes
-	out     io.Writer
-	project string
 }
 
 // newLogger with provided options.
@@ -160,6 +177,7 @@ func newLogger(out io.Writer) *Logger {
 	return &Logger{out: out}
 }
 
+// entry creates a new Entry allowing for reusing details across multiple log calls.
 func (l *Logger) entry() *Entry {
 	return &Entry{logger: l}
 }
@@ -190,12 +208,7 @@ func SetProject(project string) {
 	std.SetProject(project)
 }
 
-var (
-	std     = newLogger(os.Stdout)
-	base    = std.entry()
-	sources = make(map[uintptr]*SourceLocation)
-)
-
+// getSource from reflection, caches where possible to shave some time off.
 func getSource(depth int) *SourceLocation {
 	pc, file, line, ok := runtime.Caller(depth + 1)
 	if !ok {
@@ -214,6 +227,7 @@ func getSource(depth int) *SourceLocation {
 	return s
 }
 
+// log with given parameters.
 func (l *Logger) log(e *Entry, s severity, m string, depth int) {
 	// Do costly operations prior to grabbing mutex
 	time := time.Now()
