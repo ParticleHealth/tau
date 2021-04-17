@@ -41,8 +41,9 @@ func TestNotImplemented(t *testing.T) {
 	if e.Line <= 0 {
 		t.Errorf("line not set correctly. want >= 0, got: %d", e.Line)
 	}
-	want = "is not implemented"
+	want = "not implemented"
 	if !strings.Contains(e.Error(), want) {
 		t.Errorf("error string not correct. want contains: %s, got %s", want, e.Error())
 	}
+	t.Log("example:", err.Error())
 }

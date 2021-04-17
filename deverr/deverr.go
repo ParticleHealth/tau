@@ -21,7 +21,7 @@ type NotImplementedError struct {
 
 // Error string for a NotImplementedError.
 func (ni *NotImplementedError) Error() string {
-	return fmt.Sprintf("%s@%s:%d is not implemented", ni.Fn, ni.File, ni.Line)
+	return fmt.Sprintf("not implemented: %s", ni.Fn)
 }
 
 // NotImplemented returns an error detailing that the method being called is not implemented.
