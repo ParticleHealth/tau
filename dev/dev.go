@@ -1,12 +1,13 @@
-package deverr
+// Package dev provides convenience methods for development, such as failing fast on errors and a well defined not implemented error.
+package dev
 
 import (
 	"fmt"
 	"runtime"
 )
 
-// Verify that err is nil or panic.
-func Verify(err error) {
+// FailFast panics if err is not nil.
+func FailFast(err error) {
 	if err != nil {
 		panic(err)
 	}
@@ -35,6 +36,8 @@ func NotImplemented() error {
 	err.File = file
 	err.Line = line
 	fn := runtime.FuncForPC(pc)
-	err.Fn = fn.Name()
+	if fn != nil {
+		err.Fn = fn.Name()
+	}
 	return &err
 }

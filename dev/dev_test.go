@@ -1,4 +1,4 @@
-package deverr
+package dev
 
 import (
 	"errors"
@@ -6,19 +6,19 @@ import (
 	"testing"
 )
 
-func TestVerifyPanics(t *testing.T) {
+func TestFailFastPanics(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("did not panic")
 		}
 	}()
 	err := errors.New("test error")
-	Verify(err)
+	FailFast(err)
 }
 
-func TestVerifyContinues(t *testing.T) {
+func TestFailFastContinues(t *testing.T) {
 	var err error
-	Verify(err)
+	FailFast(err)
 }
 
 func TestNotImplemented(t *testing.T) {
@@ -30,11 +30,11 @@ func TestNotImplemented(t *testing.T) {
 	if !ok {
 		t.Fatal("err was not right type")
 	}
-	want := "tau/deverr/deverr_test.go"
+	want := "tau/dev/dev_test.go"
 	if !strings.Contains(e.File, want) {
 		t.Errorf("file not set correctly. want contains: %s, got: %s", want, e.File)
 	}
-	want = "github.com/ParticleHealth/tau/deverr.TestNotImplemented"
+	want = "github.com/ParticleHealth/tau/dev.TestNotImplemented"
 	if e.Fn != want {
 		t.Errorf("fn not set correctly. want: %s, got: %s", want, e.Fn)
 	}
