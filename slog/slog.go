@@ -38,6 +38,7 @@ var (
 type Logger struct {
 	mu      sync.Mutex // ensures atomic writes
 	out     io.Writer
+	sources bool
 	project string
 }
 
@@ -69,6 +70,18 @@ type Operation struct {
 	Producer string `json:"producer,omitempty"`
 	First    bool   `json:"first,omitempty"`
 	Last     bool   `json:"last,omitempty"`
+}
+
+// clone a given Entry so that changes to it do not affect the parent.
+func (e *Entry) clone() *Entry {
+	next := *e
+	if next.Labels != nil {
+		next.Labels = make(map[string]string)
+		for k, v := range e.Labels {
+			next.Labels[k] = v
+		}
+	}
+	return &next
 }
 
 // startOperation with a given ID and producer.
@@ -135,46 +148,56 @@ func (l *Logger) WithOperation(id, producer string) *Entry {
 	return l.entry().WithOperation(id, producer)
 }
 
-// WithSpan details included for a given Trace.
+// WithSpan details included for a given Trace. Will create a child entry.
 func (e *Entry) WithSpan(s *trace.Span) *Entry {
-	e.Trace = fmt.Sprint("projects/", e.logger.project, "/traces/", s.SpanContext().TraceID)
-	e.SpanID = s.SpanContext().SpanID.String()
-	e.TraceSampled = s.SpanContext().IsSampled()
-	return e
+	c := e.clone()
+	c.Trace = fmt.Sprint("projects/", e.logger.project, "/traces/", s.SpanContext().TraceID)
+	c.SpanID = s.SpanContext().SpanID.String()
+	c.TraceSampled = s.SpanContext().IsSampled()
+	return c
 }
 
-// WithSpan details included for a given Trace.
+// WithSpan details included for a given Trace. Will create a child entry.
 func WithSpan(s *trace.Span) *Entry {
 	return std.entry().WithSpan(s)
 }
 
-// WithSpan details included for a given Trace.
+// WithSpan details included for a given Trace. Will create a child entry.
 func (l *Logger) WithSpan(s *trace.Span) *Entry {
 	return l.entry().WithSpan(s)
 }
 
-// WithLabel including details for a given Entry.
-func (e *Entry) WithLabel(k string, v interface{}) *Entry {
-	if e.Labels == nil {
-		e.Labels = make(map[string]string)
+// Label to be included as metadata for log entries.
+type Label struct {
+	Key   string
+	Value interface{}
+}
+
+// WithLabels including details for a given Entry. Will create a child entry.
+func (e *Entry) WithLabels(labels ...Label) *Entry {
+	c := e.clone()
+	if c.Labels == nil {
+		c.Labels = make(map[string]string)
 	}
-	e.Labels[k] = fmt.Sprint(v)
-	return e
+	for _, l := range labels {
+		c.Labels[l.Key] = fmt.Sprint(l.Value)
+	}
+	return c
 }
 
-// WithLabel including details for a given Entry.
-func WithLabel(k string, v interface{}) *Entry {
-	return std.entry().WithLabel(k, v)
+// WithLabels including details for a given Entry. Will create a child entry.
+func WithLabels(labels ...Label) *Entry {
+	return std.entry().WithLabels(labels...)
 }
 
-// WithLabel including details for a given Entry.
-func (l *Logger) WithLabel(k string, v interface{}) *Entry {
-	return l.entry().WithLabel(k, v)
+// WithLabels including details for a given Entry. Will create a child entry.
+func (l *Logger) WithLabels(labels ...Label) *Entry {
+	return l.entry().WithLabels(labels...)
 }
 
 // newLogger with provided options.
 func newLogger(out io.Writer) *Logger {
-	return &Logger{out: out}
+	return &Logger{out: out, sources: true}
 }
 
 // entry creates a new Entry allowing for reusing details across multiple log calls.
@@ -208,6 +231,18 @@ func SetProject(project string) {
 	std.SetProject(project)
 }
 
+// SetIncludeSources for the logger. Will include file, line and func.
+func (l *Logger) SetIncludeSources(include bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.sources = include
+}
+
+// SetIncludeSources for the package-level logger. Will include file, line and func.
+func SetIncludeSources(include bool) {
+	std.SetIncludeSources(include)
+}
+
 // getSource from reflection, caches where possible to shave some time off.
 func getSource(depth int) *SourceLocation {
 	pc, file, line, ok := runtime.Caller(depth + 1)
@@ -217,11 +252,13 @@ func getSource(depth int) *SourceLocation {
 	if s := sources[pc]; s != nil {
 		return s
 	}
-	fn := runtime.FuncForPC(pc)
 	s := &SourceLocation{
-		File:     file,
-		Line:     fmt.Sprint(line),
-		Function: fn.Name(),
+		File: file,
+		Line: fmt.Sprint(line),
+	}
+	fn := runtime.FuncForPC(pc)
+	if fn != nil {
+		s.Function = fn.Name()
 	}
 	sources[pc] = s
 	return s
@@ -231,7 +268,10 @@ func getSource(depth int) *SourceLocation {
 func (l *Logger) log(e *Entry, s severity, m string, depth int) {
 	// Do costly operations prior to grabbing mutex
 	time := time.Now()
-	source := getSource(depth)
+	var source *SourceLocation
+	if l.sources {
+		source = getSource(depth)
+	}
 
 	l.mu.Lock()
 	defer l.mu.Unlock()

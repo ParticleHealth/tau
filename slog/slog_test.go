@@ -2,10 +2,13 @@ package slog
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
+
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -15,7 +18,7 @@ const (
 )
 
 var (
-	buf = bytes.NewBuffer(make([]byte, 0))
+	buf = bytes.NewBuffer(make([]byte, 0, 4096))
 )
 
 func TestMain(m *testing.M) {
@@ -130,8 +133,108 @@ func TestSettingProject(t *testing.T) {
 	}
 }
 
+func TestSettingSources(t *testing.T) {
+	if !std.sources {
+		t.Errorf("unexpected sources not included by default")
+	}
+	SetIncludeSources(false)
+	Info("testing")
+	got := buf.String()
+	buf.Reset()
+	if strings.Contains(got, "logging.googleapis.com/sourceLocation") {
+		t.Errorf("unexpected sources included: %s", got)
+	}
+	SetIncludeSources(true)
+	Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "logging.googleapis.com/sourceLocation") {
+		t.Errorf("unexpected sources not included: %s", got)
+	}
+	if !strings.Contains(got, `"function":"github.com/ParticleHealth/tau/slog.TestSettingSources"`) {
+		t.Errorf("function not properly set: %s", got)
+	}
+}
+
+func TestOperations(t *testing.T) {
+	// Logger level
+	e := std.WithOperation("123", "testProducer")
+	e.Info("testing")
+	got := buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "logging.googleapis.com/operation") {
+		t.Errorf("logger: operation not included\ngot: %v", got)
+	}
+	if !strings.Contains(got, `"producer":"testProducer"`) {
+		t.Errorf("logger: producer not included\nwant: testProducer\ngot: %s", got)
+	}
+	if !strings.Contains(got, `"id":"123"`) {
+		t.Errorf("logger: id not included\n want: 123\ngot: %s", got)
+	}
+	e = std.StartOperation("123", "testProducer")
+	got = buf.String()
+	buf.Reset()
+	if got == "" {
+		t.Error("logger: start operation did not create a log")
+	}
+	// Package level
+	e = WithOperation("123", "testProducer")
+	e.Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "logging.googleapis.com/operation") {
+		t.Errorf("package: operation not included\ngot: %v", got)
+	}
+	if !strings.Contains(got, `"producer":"testProducer"`) {
+		t.Errorf("package: producer not included\nwant: testProducer\ngot: %s", got)
+	}
+	if !strings.Contains(got, `"id":"123"`) {
+		t.Errorf("package: id not included\n want: 123\ngot: %s", got)
+	}
+	e = StartOperation("123", "testProducer")
+	got = buf.String()
+	buf.Reset()
+	if got == "" {
+		t.Error("package: start operation did not create a log")
+	}
+	// Entry level
+	e = base.WithOperation("123", "testProducer")
+	e.Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "logging.googleapis.com/operation") {
+		t.Errorf("entry: operation not included\ngot: %v", got)
+	}
+	if !strings.Contains(got, `"producer":"testProducer"`) {
+		t.Errorf("entry: producer not included\nwant: testProducer\ngot: %s", got)
+	}
+	if !strings.Contains(got, `"id":"123"`) {
+		t.Errorf("entry: id not included\n want: 123\ngot: %s", got)
+	}
+	e = base.StartOperation("123", "testProducer")
+	got = buf.String()
+	buf.Reset()
+	if got == "" {
+		t.Error("entry: start operation did not create a log")
+	}
+	// End operations for Entry level only.
+	e.EndOperation()
+	got = buf.String()
+	buf.Reset()
+	if got == "" {
+		t.Error("end operation did not create a log")
+	}
+	base.EndOperation()
+	got = buf.String()
+	buf.Reset()
+	if got != "" {
+		t.Errorf("empty operation wrote a log: %s", buf)
+	}
+}
+
 func TestLabels(t *testing.T) {
-	e := WithLabel("hello", "world")
+	// Logger level
+	e := std.WithLabels(Label{"hello", "world"})
 	e.Info("testing")
 	got := buf.String()
 	buf.Reset()
@@ -141,7 +244,8 @@ func TestLabels(t *testing.T) {
 	if !strings.Contains(got, `"hello":"world"`) {
 		t.Errorf("hello label not included\ngot: %v", got)
 	}
-	e.WithLabel("another", 1)
+	// Entry level
+	e = e.WithLabels(Label{"another", 1})
 	e.Info("testing")
 	got = buf.String()
 	buf.Reset()
@@ -157,25 +261,47 @@ func TestLabels(t *testing.T) {
 	if strings.Contains(got, "logging.googleapis.com/labels") {
 		t.Errorf("labels persist when they shouldn't\ngot: %v", got)
 	}
-}
-
-func BenchmarkPackageLogging(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		Info(defaultMessage)
-		buf.Reset()
+	// Package level
+	e = WithLabels(Label{"hello2", "world2"})
+	e.Info("testing")
+	got = buf.String()
+	if !strings.Contains(got, "logging.googleapis.com/labels") {
+		t.Errorf("labels not included\ngot: %v", got)
 	}
 }
 
-func BenchmarkEntryLogging(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		base.Info(defaultMessage)
-		buf.Reset()
+func TestSpans(t *testing.T) {
+	// Make sure no spans by default
+	Info("testing")
+	got := buf.String()
+	buf.Reset()
+	if strings.Contains(got, "logging.googleapis.com/trace") {
+		t.Errorf("unexpected trace present: %s", got)
 	}
-}
-
-func BenchmarkLoggerLogging(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		std.Info(defaultMessage)
-		buf.Reset()
+	if strings.Contains(got, "logging.googleapis.com/spanId") {
+		t.Errorf("unexpected span present: %s", got)
+	}
+	_, span := trace.StartSpan(context.Background(), "testSpan")
+	// Package level
+	e := WithSpan(span)
+	e.Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "logging.googleapis.com/trace") {
+		t.Errorf("package: trace not present: %s", got)
+	}
+	if !strings.Contains(got, "logging.googleapis.com/spanId") {
+		t.Errorf("package: span not present: %s", got)
+	}
+	// Logger level
+	e = std.WithSpan(span)
+	e.Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "logging.googleapis.com/trace") {
+		t.Errorf("logger: trace not present: %s", got)
+	}
+	if !strings.Contains(got, "logging.googleapis.com/spanId") {
+		t.Errorf("logger: span not present: %s", got)
 	}
 }
