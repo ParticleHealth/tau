@@ -46,15 +46,16 @@ type Logger struct {
 // See https://cloud.google.com/logging/docs/agent/configuration#special-fields for reference.
 type Entry struct {
 	logger         *Logger
-	Message        string            `json:"message"`
-	Severity       severity          `json:"severity,omitempty"`
-	Time           time.Time         `json:"time,omitempty"`
-	Labels         map[string]string `json:"logging.googleapis.com/labels,omitempty"`
-	SourceLocation *SourceLocation   `json:"logging.googleapis.com/sourceLocation,omitempty"`
-	Operation      *Operation        `json:"logging.googleapis.com/operation,omitempty"`
-	Trace          string            `json:"logging.googleapis.com/trace,omitempty"`
-	SpanID         string            `json:"logging.googleapis.com/spanId,omitempty"`
-	TraceSampled   bool              `json:"logging.googleapis.com/trace_sampled,omitempty"`
+	Message        string                 `json:"message"`
+	Severity       severity               `json:"severity,omitempty"`
+	Time           time.Time              `json:"time,omitempty"`
+	Labels         map[string]string      `json:"logging.googleapis.com/labels,omitempty"`
+	SourceLocation *SourceLocation        `json:"logging.googleapis.com/sourceLocation,omitempty"`
+	Operation      *Operation             `json:"logging.googleapis.com/operation,omitempty"`
+	Trace          string                 `json:"logging.googleapis.com/trace,omitempty"`
+	SpanID         string                 `json:"logging.googleapis.com/spanId,omitempty"`
+	TraceSampled   bool                   `json:"logging.googleapis.com/trace_sampled,omitempty"`
+	Details        map[string]interface{} `json:"details,omitempty"`
 }
 
 // SourceLocation that originated the log call.
@@ -167,14 +168,14 @@ func (l *Logger) WithSpan(s *trace.Span) *Entry {
 	return l.entry().WithSpan(s)
 }
 
-// Label to be included as metadata for log entries.
-type Label struct {
+// Pair to be included as metadata for log entries.
+type Pair struct {
 	Key   string
 	Value interface{}
 }
 
-// WithLabels including details for a given Entry. Will create a child entry.
-func (e *Entry) WithLabels(labels ...Label) *Entry {
+// WithLabels for a given Entry. Will create a child entry.
+func (e *Entry) WithLabels(labels ...Pair) *Entry {
 	c := e.clone()
 	if c.Labels == nil {
 		c.Labels = make(map[string]string)
@@ -185,14 +186,36 @@ func (e *Entry) WithLabels(labels ...Label) *Entry {
 	return c
 }
 
-// WithLabels including details for a given Entry. Will create a child entry.
-func WithLabels(labels ...Label) *Entry {
+// WithLabels for a given Entry. Will create a child entry.
+func WithLabels(labels ...Pair) *Entry {
 	return std.entry().WithLabels(labels...)
 }
 
-// WithLabels including details for a given Entry. Will create a child entry.
-func (l *Logger) WithLabels(labels ...Label) *Entry {
+// WithLabels for a given Entry. Will create a child entry.
+func (l *Logger) WithLabels(labels ...Pair) *Entry {
 	return l.entry().WithLabels(labels...)
+}
+
+// WithDetails for a given Entry. Will create a child entry.
+func (e *Entry) WithDetails(details ...Pair) *Entry {
+	c := e.clone()
+	if c.Details == nil {
+		c.Details = make(map[string]interface{})
+	}
+	for _, d := range details {
+		c.Details[d.Key] = d.Value
+	}
+	return c
+}
+
+// WithDetails for a given Entry. Will create a child entry.
+func WithDetails(details ...Pair) *Entry {
+	return std.entry().WithDetails(details...)
+}
+
+// WithDetails for a given Entry. Will create a child entry.
+func (l *Logger) WithDetails(details ...Pair) *Entry {
+	return l.entry().WithDetails(details...)
 }
 
 // newLogger with provided options.
