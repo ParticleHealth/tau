@@ -234,7 +234,7 @@ func TestOperations(t *testing.T) {
 
 func TestLabels(t *testing.T) {
 	// Logger level
-	e := std.WithLabels(Pair{"hello", "world"})
+	e := std.WithLabels(map[string]interface{}{"hello": "world"})
 	e.Info("testing")
 	got := buf.String()
 	buf.Reset()
@@ -245,7 +245,7 @@ func TestLabels(t *testing.T) {
 		t.Errorf("hello label not included\ngot: %v", got)
 	}
 	// Entry level
-	e = e.WithLabels(Pair{"another", 1})
+	e = e.WithLabels(map[string]interface{}{"another": 1})
 	e.Info("testing")
 	got = buf.String()
 	buf.Reset()
@@ -262,7 +262,7 @@ func TestLabels(t *testing.T) {
 		t.Errorf("labels persist when they shouldn't\ngot: %v", got)
 	}
 	// Package level
-	e = WithLabels(Pair{"hello2", "world2"})
+	e = WithLabels(map[string]interface{}{"hello2": "world2"})
 	e.Info("testing")
 	got = buf.String()
 	if !strings.Contains(got, "logging.googleapis.com/labels") {
@@ -272,7 +272,7 @@ func TestLabels(t *testing.T) {
 
 func TestDetails(t *testing.T) {
 	// Logger level
-	e := std.WithDetails(Pair{"hello", "world"})
+	e := std.WithDetails(map[string]interface{}{"hello": "world"})
 	e.Info("testing")
 	got := buf.String()
 	buf.Reset()
@@ -283,7 +283,7 @@ func TestDetails(t *testing.T) {
 		t.Errorf("hello label not included\ngot: %v", got)
 	}
 	// Entry level
-	e = e.WithDetails(Pair{"another", 1})
+	e = e.WithDetails(map[string]interface{}{"another": 1})
 	e.Info("testing")
 	got = buf.String()
 	buf.Reset()
@@ -300,7 +300,7 @@ func TestDetails(t *testing.T) {
 		t.Errorf("labels persist when they shouldn't\ngot: %v", got)
 	}
 	// Package level
-	e = WithDetails(Pair{"hello2", "world2"})
+	e = WithDetails(map[string]interface{}{"hello2": "world2"})
 	e.Info("testing")
 	got = buf.String()
 	if !strings.Contains(got, "details") {

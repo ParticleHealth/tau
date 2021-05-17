@@ -82,6 +82,12 @@ func (e *Entry) clone() *Entry {
 			next.Labels[k] = v
 		}
 	}
+	if next.Details != nil {
+		next.Details = make(map[string]interface{})
+		for k, v := range e.Details {
+			next.Details[k] = v
+		}
+	}
 	return &next
 }
 
@@ -168,54 +174,48 @@ func (l *Logger) WithSpan(s *trace.Span) *Entry {
 	return l.entry().WithSpan(s)
 }
 
-// Pair to be included as metadata for log entries.
-type Pair struct {
-	Key   string
-	Value interface{}
-}
-
 // WithLabels for a given Entry. Will create a child entry.
-func (e *Entry) WithLabels(labels ...Pair) *Entry {
+func (e *Entry) WithLabels(labels map[string]interface{}) *Entry {
 	c := e.clone()
 	if c.Labels == nil {
 		c.Labels = make(map[string]string)
 	}
-	for _, l := range labels {
-		c.Labels[l.Key] = fmt.Sprint(l.Value)
+	for k, v := range labels {
+		c.Labels[k] = fmt.Sprint(v)
 	}
 	return c
 }
 
 // WithLabels for a given Entry. Will create a child entry.
-func WithLabels(labels ...Pair) *Entry {
-	return std.entry().WithLabels(labels...)
+func WithLabels(labels map[string]interface{}) *Entry {
+	return std.entry().WithLabels(labels)
 }
 
 // WithLabels for a given Entry. Will create a child entry.
-func (l *Logger) WithLabels(labels ...Pair) *Entry {
-	return l.entry().WithLabels(labels...)
+func (l *Logger) WithLabels(labels map[string]interface{}) *Entry {
+	return l.entry().WithLabels(labels)
 }
 
 // WithDetails for a given Entry. Will create a child entry.
-func (e *Entry) WithDetails(details ...Pair) *Entry {
+func (e *Entry) WithDetails(details map[string]interface{}) *Entry {
 	c := e.clone()
 	if c.Details == nil {
 		c.Details = make(map[string]interface{})
 	}
-	for _, d := range details {
-		c.Details[d.Key] = d.Value
+	for k, v := range details {
+		c.Details[k] = v
 	}
 	return c
 }
 
 // WithDetails for a given Entry. Will create a child entry.
-func WithDetails(details ...Pair) *Entry {
-	return std.entry().WithDetails(details...)
+func WithDetails(details map[string]interface{}) *Entry {
+	return std.entry().WithDetails(details)
 }
 
 // WithDetails for a given Entry. Will create a child entry.
-func (l *Logger) WithDetails(details ...Pair) *Entry {
-	return l.entry().WithDetails(details...)
+func (l *Logger) WithDetails(details map[string]interface{}) *Entry {
+	return l.entry().WithDetails(details)
 }
 
 // newLogger with provided options.
