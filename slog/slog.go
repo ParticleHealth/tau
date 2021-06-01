@@ -612,7 +612,7 @@ func NewContext(ctx context.Context, entry *Entry) context.Context {
 func FromContext(ctx context.Context) *Entry {
 	entry, ok := ctx.Value(entryKey).(*Entry)
 	if !ok {
-		return base
+		return std.entry()
 	}
 	return entry
 }

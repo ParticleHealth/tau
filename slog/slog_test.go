@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -348,8 +349,8 @@ func TestContext(t *testing.T) {
 	emptyCtx := context.Background()
 
 	newEntry := FromContext(emptyCtx)
-	if newEntry != base {
-		t.Errorf("failed to return new entry when one is not available")
+	if reflect.DeepEqual(*newEntry, Entry{}) {
+		t.Error("failed to return new entry when one is not available")
 	}
 
 	e := std.entry()
@@ -359,7 +360,7 @@ func TestContext(t *testing.T) {
 
 	retrieved := FromContext(ctxWithEntry)
 	if retrieved.Message != "test-entry" {
-		t.Errorf("failed to retrieve correct entry from context")
+		t.Error("failed to retrieve correct entry from context")
 	}
 
 }
