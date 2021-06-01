@@ -5,10 +5,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.opencensus.io/trace"
 )
 
@@ -346,21 +347,15 @@ func TestSpans(t *testing.T) {
 }
 
 func TestContext(t *testing.T) {
-	emptyCtx := context.Background()
-
-	newEntry := FromContext(emptyCtx)
-	if reflect.DeepEqual(*newEntry, Entry{}) {
-		t.Error("failed to return new entry when one is not available")
+	newEntry := FromContext(context.Background())
+	if diff := cmp.Diff(newEntry, std.entry(), cmpopts.IgnoreUnexported(Entry{})); diff != "" {
+		t.Errorf("failed to return new entry when one is not available:\n%s", diff)
 	}
 
-	e := std.entry()
-	e.Info("test-entry")
-
-	ctxWithEntry := NewContext(emptyCtx, e)
-
-	retrieved := FromContext(ctxWithEntry)
-	if retrieved.Message != "test-entry" {
-		t.Error("failed to retrieve correct entry from context")
+	want := std.entry().WithDetails(map[string]interface{}{"hello": "world"})
+	ctx := NewContext(context.Background(), want)
+	got := FromContext(ctx)
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreUnexported(Entry{})); diff != "" {
+		t.Errorf("failed to retrieve correct entry from context:\n%s", diff)
 	}
-
 }
