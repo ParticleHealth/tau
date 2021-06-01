@@ -343,3 +343,23 @@ func TestSpans(t *testing.T) {
 		t.Errorf("logger: span not present: %s", got)
 	}
 }
+
+func TestContext(t *testing.T) {
+	emptyCtx := context.Background()
+
+	newEntry := FromContext(emptyCtx)
+	if newEntry != base {
+		t.Errorf("failed to return new entry when one is not available")
+	}
+
+	e := std.entry()
+	e.Info("test-entry")
+
+	ctxWithEntry := NewContext(emptyCtx, e)
+
+	retrieved := FromContext(ctxWithEntry)
+	if retrieved.Message != "test-entry" {
+		t.Errorf("failed to retrieve correct entry from context")
+	}
+
+}
