@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"go.opencensus.io/trace"
 )
 
@@ -341,5 +343,19 @@ func TestSpans(t *testing.T) {
 	}
 	if !strings.Contains(got, "logging.googleapis.com/spanId") {
 		t.Errorf("logger: span not present: %s", got)
+	}
+}
+
+func TestContext(t *testing.T) {
+	newEntry := FromContext(context.Background())
+	if diff := cmp.Diff(newEntry, std.entry(), cmpopts.IgnoreUnexported(Entry{})); diff != "" {
+		t.Errorf("failed to return new entry when one is not available:\n%s", diff)
+	}
+
+	want := std.entry().WithDetails(map[string]interface{}{"hello": "world"})
+	ctx := NewContext(context.Background(), want)
+	got := FromContext(ctx)
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreUnexported(Entry{})); diff != "" {
+		t.Errorf("failed to retrieve correct entry from context:\n%s", diff)
 	}
 }

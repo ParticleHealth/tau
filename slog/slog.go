@@ -2,6 +2,7 @@
 package slog
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,6 +17,8 @@ import (
 // Severity levels as specified in https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity.
 type severity string
 
+type key int
+
 const (
 	severityDefault   severity = "DEFAULT"
 	severityDebug     severity = "DEBUG"
@@ -29,9 +32,10 @@ const (
 )
 
 var (
-	std     = newLogger(os.Stdout)
-	base    = std.entry()
-	sources = make(map[uintptr]*SourceLocation)
+	std      = newLogger(os.Stdout)
+	base     = std.entry()
+	sources  = make(map[uintptr]*SourceLocation)
+	entryKey key
 )
 
 // Logger used to write structured logs in a thread-safe manner to a given output.
@@ -597,4 +601,18 @@ func Emergencyf(format string, v ...interface{}) {
 // Arguments are handled in the manner of fmt.Printf.
 func (e *Entry) Emergencyf(format string, v ...interface{}) {
 	e.logger.log(e, severityEmergency, fmt.Sprintf(format, v...), 2)
+}
+
+// NewContext returns a new Context that carries an entry.
+func NewContext(ctx context.Context, entry *Entry) context.Context {
+	return context.WithValue(ctx, entryKey, entry)
+}
+
+// FromContext returns the Entry value stored in ctx, or an new Entry if none exists.
+func FromContext(ctx context.Context) *Entry {
+	entry, ok := ctx.Value(entryKey).(*Entry)
+	if !ok {
+		return std.entry()
+	}
+	return entry
 }
