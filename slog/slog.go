@@ -200,6 +200,26 @@ func (l *Logger) WithLabels(labels map[string]interface{}) *Entry {
 	return l.entry().WithLabels(labels)
 }
 
+// WithDetail for a given Entry. Will create a child entry.
+func (e *Entry) WithDetail(k string, v interface{}) *Entry {
+	c := e.clone()
+	if c.Details == nil {
+		c.Details = make(map[string]interface{})
+	}
+	c.Details[k] = v
+	return c
+}
+
+// WithDetail for a given Entry. Will create a child entry.
+func WithDetail(k string, v interface{}) *Entry {
+	return std.entry().WithDetail(k, v)
+}
+
+// WithDetail for a given Entry. Will create a child entry.
+func (l *Logger) WithDetail(k string, v interface{}) *Entry {
+	return l.entry().WithDetail(k, v)
+}
+
 // WithDetails for a given Entry. Will create a child entry.
 func (e *Entry) WithDetails(details map[string]interface{}) *Entry {
 	c := e.clone()
