@@ -272,6 +272,44 @@ func TestLabels(t *testing.T) {
 	}
 }
 
+func TestDetail(t *testing.T) {
+	// Logger level
+	e := std.WithDetail("hello", "world")
+	e.Info("testing")
+	got := buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "details") {
+		t.Errorf("details not included\ngot: %v", got)
+	}
+	if !strings.Contains(got, `"hello":"world"`) {
+		t.Errorf("hello detail not included\ngot: %v", got)
+	}
+	// Entry level
+	e = e.WithDetail("another", 1)
+	e.Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if !strings.Contains(got, `"another":1`) {
+		t.Errorf("another detail not included\ngot: %v", got)
+	}
+	if !strings.Contains(got, `"hello":"world"`) {
+		t.Errorf("original detail removed\ngot: %v", got)
+	}
+	Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if strings.Contains(got, "details") {
+		t.Errorf("details persist when they shouldn't\ngot: %v", got)
+	}
+	// Package level
+	e = WithDetail("hello2", "world2")
+	e.Info("testing")
+	got = buf.String()
+	if !strings.Contains(got, "details") {
+		t.Errorf("details not included\ngot: %v", got)
+	}
+}
+
 func TestDetails(t *testing.T) {
 	// Logger level
 	e := std.WithDetails(map[string]interface{}{"hello": "world"})
