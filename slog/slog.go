@@ -202,6 +202,26 @@ func (l *Logger) WithLabels(labels Fields) *Entry {
 	return l.entry().WithLabels(labels)
 }
 
+// WithError for a given Entry. Will create a child entry.
+func (e *Entry) WithError(err interface{}) *Entry {
+	c := e.clone()
+	if c.Details == nil {
+		c.Details = make(Fields)
+	}
+	c.Details["err"] = err
+	return c
+}
+
+// WithError for a given Entry. Will create a child entry.
+func WithError(err interface{}) *Entry {
+	return std.entry().WithError(err)
+}
+
+// WithError for a given Entry. Will create a child entry.
+func (l *Logger) WithError(err interface{}) *Entry {
+	return l.entry().WithError(err)
+}
+
 // WithDetail for a given Entry. Will create a child entry.
 func (e *Entry) WithDetail(k string, v interface{}) *Entry {
 	c := e.clone()
