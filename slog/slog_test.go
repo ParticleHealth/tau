@@ -278,35 +278,35 @@ func TestError(t *testing.T) {
 	e.Info("testing")
 	got := buf.String()
 	buf.Reset()
-	if !strings.Contains(got, "details") {
-		t.Errorf("details not included\ngot: %v", got)
+	if !strings.Contains(got, "error") {
+		t.Errorf("error not included\ngot: %v", got)
 	}
-	if !strings.Contains(got, `"err":"error msg 1"`) {
-		t.Errorf("error message not included\ngot: %v", got)
+	if !strings.Contains(got, `"error":"error msg 1"`) {
+		t.Errorf("error not included\ngot: %v", got)
 	}
 	// Entry level
 	e = e.WithError("error msg 2")
 	e.Info("testing")
 	got = buf.String()
 	buf.Reset()
-	if !strings.Contains(got, `"err":"error msg 2"`) {
-		t.Errorf("error message not included\ngot: %v", got)
+	if !strings.Contains(got, `"error":"error msg 2"`) {
+		t.Errorf("error not included\ngot: %v", got)
 	}
-	if strings.Contains(got, `"err":"error msg 1"`) {
+	if strings.Contains(got, `"error":"error msg 1"`) {
 		t.Errorf("original error not overriden\ngot: %v", got)
 	}
 	Info("testing")
 	got = buf.String()
 	buf.Reset()
-	if strings.Contains(got, "details") {
-		t.Errorf("details persist when they shouldn't\ngot: %v", got)
+	if strings.Contains(got, "error") {
+		t.Errorf("error persist when it shouldn't\ngot: %v", got)
 	}
 	// Package level
 	e = WithError("error msg 3")
 	e.Info("testing")
 	got = buf.String()
-	if !strings.Contains(got, "details") {
-		t.Errorf("details not included\ngot: %v", got)
+	if !strings.Contains(got, "err") {
+		t.Errorf("error not included\ngot: %v", got)
 	}
 }
 
