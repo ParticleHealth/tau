@@ -3,6 +3,7 @@ package slog
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -273,27 +274,28 @@ func TestLabels(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
+	errA := errors.New("error msg A")
+	errB := errors.New("error msg B")
 	// Logger level
-	e := std.WithError("error msg 1")
+	e := std.WithError(errA)
 	e.Info("testing")
 	got := buf.String()
 	buf.Reset()
 	if !strings.Contains(got, "error") {
 		t.Errorf("error not included\ngot: %v", got)
 	}
-	if !strings.Contains(got, `"error":"error msg 1"`) {
-		t.Errorf("error not included\ngot: %v", got)
+	if e.Err.Error() != errA.Error() {
+		t.Errorf("error not included\ngot: %v", e.Err.Error())
 	}
 	// Entry level
-	e = e.WithError("error msg 2")
+	e = e.WithError(errB)
 	e.Info("testing")
-	got = buf.String()
 	buf.Reset()
-	if !strings.Contains(got, `"error":"error msg 2"`) {
-		t.Errorf("error not included\ngot: %v", got)
+	if e.Err.Error() != errB.Error() {
+		t.Errorf("error not included\ngot: %v", e.Err.Error())
 	}
-	if strings.Contains(got, `"error":"error msg 1"`) {
-		t.Errorf("original error not overriden\ngot: %v", got)
+	if e.Err.Error() == errA.Error() {
+		t.Errorf("error not included\ngot: %v", e.Err.Error())
 	}
 	Info("testing")
 	got = buf.String()
@@ -302,10 +304,10 @@ func TestError(t *testing.T) {
 		t.Errorf("error persist when it shouldn't\ngot: %v", got)
 	}
 	// Package level
-	e = WithError("error msg 3")
+	e = WithError(errA)
 	e.Info("testing")
 	got = buf.String()
-	if !strings.Contains(got, "err") {
+	if !strings.Contains(got, "error") {
 		t.Errorf("error not included\ngot: %v", got)
 	}
 }

@@ -62,7 +62,7 @@ type Entry struct {
 	SpanID         string            `json:"logging.googleapis.com/spanId,omitempty"`
 	TraceSampled   bool              `json:"logging.googleapis.com/trace_sampled,omitempty"`
 	Details        Fields            `json:"details,omitempty"`
-	Err            string            `json:"error,omitempty"`
+	Err            error             `json:"error,omitempty"`
 }
 
 // SourceLocation that originated the log call.
@@ -204,19 +204,19 @@ func (l *Logger) WithLabels(labels Fields) *Entry {
 }
 
 // WithError for a given Entry. Will create a child entry.
-func (e *Entry) WithError(err string) *Entry {
+func (e *Entry) WithError(err error) *Entry {
 	c := e.clone()
 	c.Err = err
 	return c
 }
 
 // WithError for a given Entry. Will create a child entry.
-func WithError(err string) *Entry {
+func WithError(err error) *Entry {
 	return std.entry().WithError(err)
 }
 
 // WithError for a given Entry. Will create a child entry.
-func (l *Logger) WithError(err string) *Entry {
+func (l *Logger) WithError(err error) *Entry {
 	return l.entry().WithError(err)
 }
 
