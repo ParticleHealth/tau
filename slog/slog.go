@@ -19,6 +19,8 @@ type severity string
 
 type key int
 
+type Fields map[string]interface{}
+
 const (
 	severityDefault   severity = "DEFAULT"
 	severityDebug     severity = "DEBUG"
@@ -50,16 +52,17 @@ type Logger struct {
 // See https://cloud.google.com/logging/docs/agent/configuration#special-fields for reference.
 type Entry struct {
 	logger         *Logger
-	Message        string                 `json:"message"`
-	Severity       severity               `json:"severity,omitempty"`
-	Time           time.Time              `json:"time,omitempty"`
-	Labels         map[string]string      `json:"logging.googleapis.com/labels,omitempty"`
-	SourceLocation *SourceLocation        `json:"logging.googleapis.com/sourceLocation,omitempty"`
-	Operation      *Operation             `json:"logging.googleapis.com/operation,omitempty"`
-	Trace          string                 `json:"logging.googleapis.com/trace,omitempty"`
-	SpanID         string                 `json:"logging.googleapis.com/spanId,omitempty"`
-	TraceSampled   bool                   `json:"logging.googleapis.com/trace_sampled,omitempty"`
-	Details        map[string]interface{} `json:"details,omitempty"`
+	Message        string            `json:"message"`
+	Severity       severity          `json:"severity,omitempty"`
+	Time           time.Time         `json:"time,omitempty"`
+	Labels         map[string]string `json:"logging.googleapis.com/labels,omitempty"`
+	SourceLocation *SourceLocation   `json:"logging.googleapis.com/sourceLocation,omitempty"`
+	Operation      *Operation        `json:"logging.googleapis.com/operation,omitempty"`
+	Trace          string            `json:"logging.googleapis.com/trace,omitempty"`
+	SpanID         string            `json:"logging.googleapis.com/spanId,omitempty"`
+	TraceSampled   bool              `json:"logging.googleapis.com/trace_sampled,omitempty"`
+	Details        Fields            `json:"details,omitempty"`
+	Err            error             `json:"error,omitempty"`
 }
 
 // SourceLocation that originated the log call.
@@ -87,7 +90,7 @@ func (e *Entry) clone() *Entry {
 		}
 	}
 	if next.Details != nil {
-		next.Details = make(map[string]interface{})
+		next.Details = make(Fields)
 		for k, v := range e.Details {
 			next.Details[k] = v
 		}
@@ -179,7 +182,7 @@ func (l *Logger) WithSpan(s *trace.Span) *Entry {
 }
 
 // WithLabels for a given Entry. Will create a child entry.
-func (e *Entry) WithLabels(labels map[string]interface{}) *Entry {
+func (e *Entry) WithLabels(labels Fields) *Entry {
 	c := e.clone()
 	if c.Labels == nil {
 		c.Labels = make(map[string]string)
@@ -191,20 +194,57 @@ func (e *Entry) WithLabels(labels map[string]interface{}) *Entry {
 }
 
 // WithLabels for a given Entry. Will create a child entry.
-func WithLabels(labels map[string]interface{}) *Entry {
+func WithLabels(labels Fields) *Entry {
 	return std.entry().WithLabels(labels)
 }
 
 // WithLabels for a given Entry. Will create a child entry.
-func (l *Logger) WithLabels(labels map[string]interface{}) *Entry {
+func (l *Logger) WithLabels(labels Fields) *Entry {
 	return l.entry().WithLabels(labels)
 }
 
-// WithDetails for a given Entry. Will create a child entry.
-func (e *Entry) WithDetails(details map[string]interface{}) *Entry {
+// WithError for a given Entry. Will create a child entry.
+func (e *Entry) WithError(err error) *Entry {
+	c := e.clone()
+	c.Err = err
+	return c
+}
+
+// WithError for a given Entry. Will create a child entry.
+func WithError(err error) *Entry {
+	return std.entry().WithError(err)
+}
+
+// WithError for a given Entry. Will create a child entry.
+func (l *Logger) WithError(err error) *Entry {
+	return l.entry().WithError(err)
+}
+
+// WithDetail for a given Entry. Will create a child entry.
+func (e *Entry) WithDetail(k string, v interface{}) *Entry {
 	c := e.clone()
 	if c.Details == nil {
-		c.Details = make(map[string]interface{})
+		c.Details = make(Fields)
+	}
+	c.Details[k] = v
+	return c
+}
+
+// WithDetail for a given Entry. Will create a child entry.
+func WithDetail(k string, v interface{}) *Entry {
+	return std.entry().WithDetail(k, v)
+}
+
+// WithDetail for a given Entry. Will create a child entry.
+func (l *Logger) WithDetail(k string, v interface{}) *Entry {
+	return l.entry().WithDetail(k, v)
+}
+
+// WithDetails for a given Entry. Will create a child entry.
+func (e *Entry) WithDetails(details Fields) *Entry {
+	c := e.clone()
+	if c.Details == nil {
+		c.Details = make(Fields)
 	}
 	for k, v := range details {
 		c.Details[k] = v
@@ -213,12 +253,12 @@ func (e *Entry) WithDetails(details map[string]interface{}) *Entry {
 }
 
 // WithDetails for a given Entry. Will create a child entry.
-func WithDetails(details map[string]interface{}) *Entry {
+func WithDetails(details Fields) *Entry {
 	return std.entry().WithDetails(details)
 }
 
 // WithDetails for a given Entry. Will create a child entry.
-func (l *Logger) WithDetails(details map[string]interface{}) *Entry {
+func (l *Logger) WithDetails(details Fields) *Entry {
 	return l.entry().WithDetails(details)
 }
 

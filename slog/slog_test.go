@@ -3,6 +3,7 @@ package slog
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -269,6 +270,83 @@ func TestLabels(t *testing.T) {
 	got = buf.String()
 	if !strings.Contains(got, "logging.googleapis.com/labels") {
 		t.Errorf("labels not included\ngot: %v", got)
+	}
+}
+
+func TestError(t *testing.T) {
+	errA := errors.New("error msg A")
+	errB := errors.New("error msg B")
+	// Logger level
+	e := std.WithError(errA)
+	e.Info("testing")
+	got := buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "error") {
+		t.Errorf("error not included\ngot: %v", got)
+	}
+	if e.Err.Error() != errA.Error() {
+		t.Errorf("error not included\ngot: %v", e.Err.Error())
+	}
+	// Entry level
+	e = e.WithError(errB)
+	e.Info("testing")
+	buf.Reset()
+	if e.Err.Error() != errB.Error() {
+		t.Errorf("error not included\ngot: %v", e.Err.Error())
+	}
+	if e.Err.Error() == errA.Error() {
+		t.Errorf("error not included\ngot: %v", e.Err.Error())
+	}
+	Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if strings.Contains(got, "error") {
+		t.Errorf("error persist when it shouldn't\ngot: %v", got)
+	}
+	// Package level
+	e = WithError(errA)
+	e.Info("testing")
+	got = buf.String()
+	if !strings.Contains(got, "error") {
+		t.Errorf("error not included\ngot: %v", got)
+	}
+}
+
+func TestDetail(t *testing.T) {
+	// Logger level
+	e := std.WithDetail("hello", "world")
+	e.Info("testing")
+	got := buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "details") {
+		t.Errorf("details not included\ngot: %v", got)
+	}
+	if !strings.Contains(got, `"hello":"world"`) {
+		t.Errorf("hello detail not included\ngot: %v", got)
+	}
+	// Entry level
+	e = e.WithDetail("another", 1)
+	e.Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if !strings.Contains(got, `"another":1`) {
+		t.Errorf("another detail not included\ngot: %v", got)
+	}
+	if !strings.Contains(got, `"hello":"world"`) {
+		t.Errorf("original detail removed\ngot: %v", got)
+	}
+	Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if strings.Contains(got, "details") {
+		t.Errorf("details persist when they shouldn't\ngot: %v", got)
+	}
+	// Package level
+	e = WithDetail("hello2", "world2")
+	e.Info("testing")
+	got = buf.String()
+	if !strings.Contains(got, "details") {
+		t.Errorf("details not included\ngot: %v", got)
 	}
 }
 
