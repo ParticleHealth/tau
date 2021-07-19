@@ -439,6 +439,13 @@ func TestContext(t *testing.T) {
 }
 
 // Examples
+func ExampleNewContext() {
+	entry := WithDetail("id", "123456789")
+	ctx := NewContext(context.Background(), entry)
+	got := FromContext(ctx)
+	fmt.Print(got.Details["id"])
+	// Output: 123456789
+}
 func ExampleSetIncludeSources() {
 	SetIncludeSources(true)
 	fmt.Print(std.sources)
@@ -446,15 +453,31 @@ func ExampleSetIncludeSources() {
 }
 
 func ExampleSetProject() {
-	SetProject("PROJECT_ID")
+	SetProject("projectId")
 	fmt.Print(std.project)
-	// Output: PROJECT_ID
+	// Output: projectId
+}
+
+func ExampleFromContext() {
+	entry := WithDetail("id", "123456789")
+	ctx := NewContext(context.Background(), entry)
+	got := FromContext(ctx)
+	fmt.Print(got.Details["id"])
+	// Output: 123456789
+}
+
+func ExampleStartOperation() {
+	id := "operationId"
+	producer := "producerName"
+	entry := StartOperation(id, producer)
+	fmt.Print(entry.Operation)
+	// Output: &{operationId producerName false false}
 }
 
 func ExampleWithDetail() {
 	entry := WithDetail("key", "value")
 	fmt.Print(entry.Details)
-	// Output: map[key: value]
+	// Output: map[key:value]
 }
 
 func ExampleWithDetails() {
@@ -465,4 +488,38 @@ func ExampleWithDetails() {
 	entry := WithDetails(details)
 	fmt.Print(entry.Details)
 	// Output: map[detailOne:one detailTwo:2]
+}
+
+func ExampleWithError() {
+	err := errors.New("error!")
+	entry := WithError(err)
+	fmt.Print(entry.Err)
+	// Output: error!
+}
+
+func ExampleWithLabels() {
+	labels := map[string]interface{}{
+		"labelOne": "hello",
+		"labelTwo": "world",
+	}
+	entry := WithLabels(labels)
+	fmt.Print(entry.Labels)
+	// Output: map[labelOne:hello labelTwo:world]
+}
+
+func ExampleWithOperation() {
+	id := "operationId"
+	producer := "producerName"
+	entry := WithOperation(id, producer)
+	fmt.Print(entry.Operation)
+	// Output: &{operationId producerName false false}
+}
+
+func ExampleWithSpan() {
+	_, span := trace.StartSpan(context.Background(), "spanName")
+	entry := WithSpan(span)
+	if len(entry.SpanID) > 0 {
+		fmt.Print(true)
+	}
+	// Output: true
 }
