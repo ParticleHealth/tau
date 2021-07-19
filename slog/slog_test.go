@@ -437,3 +437,32 @@ func TestContext(t *testing.T) {
 		t.Errorf("failed to retrieve correct entry from context:\n%s", diff)
 	}
 }
+
+// Examples
+func ExampleSetIncludeSources() {
+	SetIncludeSources(true)
+	fmt.Print(std.sources)
+	// Output: true
+}
+
+func ExampleSetProject() {
+	SetProject("PROJECT_ID")
+	fmt.Print(std.project)
+	// Output: PROJECT_ID
+}
+
+func ExampleWithDetail() {
+	entry := WithDetail("key", "value")
+	fmt.Print(entry.Details)
+	// Output: map[key: value]
+}
+
+func ExampleWithDetails() {
+	details := map[string]interface{}{
+		"detailOne": "one",
+		"detailTwo": 2,
+	}
+	entry := WithDetails(details)
+	fmt.Print(entry.Details)
+	// Output: map[detailOne:one detailTwo:2]
+}

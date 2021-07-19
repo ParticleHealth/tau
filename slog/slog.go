@@ -648,7 +648,7 @@ func NewContext(ctx context.Context, entry *Entry) context.Context {
 	return context.WithValue(ctx, entryKey, entry)
 }
 
-// FromContext returns the Entry value stored in ctx, or an new Entry if none exists.
+// FromContext returns the Entry value stored in ctx, or a new Entry if none exists.
 func FromContext(ctx context.Context) *Entry {
 	entry, ok := ctx.Value(entryKey).(*Entry)
 	if !ok {
