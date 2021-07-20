@@ -7,14 +7,11 @@ import (
 	"go.opencensus.io/trace"
 )
 
-func ExampleNewContext() {
-	entry := &Entry{}
-	NewContext(context.Background(), entry)
-}
-
 func ExampleFromContext() {
-	ctx := context.Background()
-	entry := FromContext(ctx)
+	entry := &Entry{}
+	ctx := NewContext(context.Background(), entry)
+
+	entry = FromContext(ctx)
 	entry.Info("entry pulled from context")
 }
 
@@ -22,20 +19,22 @@ func ExampleStartOperation() {
 	id := "operationId"
 	producer := "producerName"
 	entry := StartOperation(id, producer)
-	entry.Info("entry with operation")
-}
+	entry.Info("entry logged under new operation")
 
-func ExampleWithDetail() {
-	entry := WithDetail("key", "value")
-	entry.Info("entry with detail")
-}
+	entry.WithOperation(id, producer)
+	entry.Info("entry logged under existing operation")
 
+	entry.EndOperation()
+}
 func ExampleWithDetails() {
+	entry := WithDetail("key", "value")
+	entry.Info("entry with single detail")
+
 	details := Fields{
 		"detailOne": "one",
 		"detailTwo": 2,
 	}
-	entry := WithDetails(details)
+	entry = entry.WithDetails(details)
 	entry.Info("entry with details")
 }
 
@@ -52,13 +51,6 @@ func ExampleWithLabels() {
 	}
 	entry := WithLabels(labels)
 	entry.Info("entry with labels")
-}
-
-func ExampleWithOperation() {
-	id := "operationId"
-	producer := "producerName"
-	entry := WithOperation(id, producer)
-	entry.Info("entry with operation")
 }
 
 func ExampleWithSpan() {
