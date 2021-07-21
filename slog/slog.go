@@ -9,7 +9,6 @@ import (
 	"os"
 	"runtime"
 	"sync"
-	"time"
 
 	"go.opencensus.io/trace"
 )
@@ -54,7 +53,6 @@ type Entry struct {
 	logger         *Logger
 	Message        string            `json:"message"`
 	Severity       severity          `json:"severity,omitempty"`
-	Time           time.Time         `json:"time,omitempty"`
 	Labels         map[string]string `json:"logging.googleapis.com/labels,omitempty"`
 	SourceLocation *SourceLocation   `json:"logging.googleapis.com/sourceLocation,omitempty"`
 	Operation      *Operation        `json:"logging.googleapis.com/operation,omitempty"`
@@ -334,7 +332,6 @@ func getSource(depth int) *SourceLocation {
 // log with given parameters.
 func (l *Logger) log(e *Entry, s severity, m string, depth int) {
 	// Do costly operations prior to grabbing mutex
-	time := time.Now()
 	var source *SourceLocation
 	if l.sources {
 		source = getSource(depth)
@@ -345,7 +342,6 @@ func (l *Logger) log(e *Entry, s severity, m string, depth int) {
 
 	e.Severity = s
 	e.Message = m
-	e.Time = time
 	e.SourceLocation = source
 
 	if b, err := json.Marshal(e); err != nil {
