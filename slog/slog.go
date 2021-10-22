@@ -21,7 +21,6 @@ type key int
 type Fields map[string]interface{}
 
 const (
-	severityDefault   severity = "DEFAULT"
 	severityDebug     severity = "DEBUG"
 	severityInfo      severity = "INFO"
 	severityNotice    severity = "NOTICE"
