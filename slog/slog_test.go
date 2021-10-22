@@ -20,9 +20,7 @@ const (
 	formattedResult  = "works: true"
 )
 
-var (
-	buf = bytes.NewBuffer(make([]byte, 0, 4096))
-)
+var buf = bytes.NewBuffer(make([]byte, 0, 4096))
 
 func TestMain(m *testing.M) {
 	SetOutput(buf)

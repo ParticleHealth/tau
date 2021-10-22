@@ -26,6 +26,7 @@ func ExampleStartOperation() {
 
 	entry.EndOperation()
 }
+
 func ExampleWithDetails() {
 	entry := WithDetail("key", "value")
 	entry.Info("entry with single detail")
