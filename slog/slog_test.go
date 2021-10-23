@@ -20,9 +20,7 @@ const (
 	formattedResult  = "works: true"
 )
 
-var (
-	buf = bytes.NewBuffer(make([]byte, 0, 4096))
-)
+var buf = bytes.NewBuffer(make([]byte, 0, 4096))
 
 func TestMain(m *testing.M) {
 	SetOutput(buf)
@@ -174,7 +172,7 @@ func TestOperations(t *testing.T) {
 	if !strings.Contains(got, `"id":"123"`) {
 		t.Errorf("logger: id not included\n want: 123\ngot: %s", got)
 	}
-	e = std.StartOperation("123", "testProducer")
+	_ = std.StartOperation("123", "testProducer")
 	got = buf.String()
 	buf.Reset()
 	if got == "" {
@@ -194,7 +192,7 @@ func TestOperations(t *testing.T) {
 	if !strings.Contains(got, `"id":"123"`) {
 		t.Errorf("package: id not included\n want: 123\ngot: %s", got)
 	}
-	e = StartOperation("123", "testProducer")
+	_ = StartOperation("123", "testProducer")
 	got = buf.String()
 	buf.Reset()
 	if got == "" {

@@ -1,0 +1,11 @@
+run:
+  timeout: 5m 
+linters:
+  enable:
+    - gofumpt
+linters-settings:
+  gofumpt:
+    lang-version: "1.17"
+    extra-rules: true
+issues:
+  fix: true
