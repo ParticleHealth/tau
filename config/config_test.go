@@ -1,93 +1,97 @@
 package config
 
 import (
+	"bytes"
 	"flag"
-	"os"
-	"strconv"
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 )
 
 const (
-	base10        = 10
-	usage         = "ignored usage"
-	defaultString = "default"
-	changedString = "override"
-	defaultBool   = false
-	changedBool   = true
-	defaultInt    = 0
-	changedInt    = 1
+	badFlag      = "@!@!@!@"
+	defaultFlag  = "flag-default"
+	defaultValue = "default"
+	setFlag      = "flag-set"
+	setValue     = "set"
 )
 
-var (
-	basicString *string
-	setString   *string
-	envString   *string
-	basicBool   *bool
-	setBool     *bool
-	envBool     *bool
-	basicInt    *int64
-	setInt      *int64
-	envInt      *int64
-)
-
-func TestMain(m *testing.M) {
-	os.Setenv("ENV_STRING", changedString)
-	basicString = String("basic_string", defaultString, usage)
-	setString = String("set_string", defaultString, usage)
-	flag.Set("set_string", changedString)
-	envString = String("env_string", defaultString, usage)
-
-	os.Setenv("ENV_BOOL", strconv.FormatBool(changedBool))
-	basicBool = Bool("basic_bool", defaultBool, usage)
-	setBool = Bool("set_bool", defaultBool, usage)
-	flag.Set("set_bool", strconv.FormatBool(changedBool))
-	envBool = Bool("env_bool", defaultBool, usage)
-
-	os.Setenv("ENV_INT", strconv.FormatInt(changedInt, base10))
-	basicInt = Int64("basc_int", defaultInt, usage)
-	setInt = Int64("set_int", defaultInt, usage)
-	flag.Set("set_int", strconv.FormatInt(changedInt, base10))
-	envInt = Int64("env_int", defaultInt, usage)
-
-	Parse()
-	os.Exit(m.Run())
-}
-
-func TestDefaults(t *testing.T) {
+func TestFlagStillWorks(t *testing.T) {
 	t.Parallel()
-	if defaultString != *basicString {
-		t.Errorf("string default failed. want %s, got %s", defaultString, *basicString)
+	fs := flag.NewFlagSet("test", flag.PanicOnError)
+	defaultString := fs.String(defaultFlag, defaultValue, "testing default value")
+	setString := fs.String(setFlag, defaultValue, "testing set value")
+	if err := ParseFlagSet([]string{fmt.Sprint("-", setFlag, "=", setValue)}, fs); err != nil {
+		t.Fatalf("parsing failed: %v", err)
 	}
-	if defaultBool != *basicBool {
-		t.Errorf("bool default failed. want %t, got %t", defaultBool, *basicBool)
+	if !fs.Parsed() {
+		t.Error("Parsed not true")
 	}
-	if defaultInt != *basicInt {
-		t.Errorf("int default failed. want %d, got %d", defaultInt, *basicInt)
+	if *defaultString != defaultValue || *setString != setValue {
+		t.Errorf("flag not set correctly\ndefault flag want: %s, got: %s\nset flag want: %s, got: %s",
+			defaultValue, *defaultString, setValue, *setString)
 	}
 }
 
-func TestFlags(t *testing.T) {
-	t.Parallel()
-	if changedString != *setString {
-		t.Errorf("string flag override failed. want %s, got %s", changedString, *setString)
+func TestEnvironmentOverride(t *testing.T) {
+	fs := flag.NewFlagSet("test", flag.PanicOnError)
+	defaultString := fs.String(defaultFlag, defaultValue, "testing default value")
+	setString := fs.String(setFlag, defaultValue, "testing set value")
+	t.Setenv(strings.ToUpper(setFlag), setValue)
+	if err := ParseFlagSet(nil, fs); err != nil {
+		t.Fatalf("parsing failed: %v", err)
 	}
-	if changedBool != *setBool {
-		t.Errorf("bool flag override failed. want %t, got %t", changedBool, *setBool)
+	if !fs.Parsed() {
+		t.Error("Parsed not true")
 	}
-	if changedInt != *setInt {
-		t.Errorf("int flag override failed. want %d, got %d", changedInt, *setInt)
+	if *defaultString != defaultValue || *setString != setValue {
+		t.Errorf("flag not set correctly\ndefault flag want: %s, got: %s\nset flag want: %s, got: %s",
+			defaultValue, *defaultString, setValue, *setString)
 	}
 }
 
-func TestEnvs(t *testing.T) {
+func TestUpdatedUsage(t *testing.T) {
 	t.Parallel()
-	if changedString != *envString {
-		t.Errorf("string env override failed. want %s, got %s", changedString, *envString)
+	output := bytes.NewBuffer(make([]byte, 0, 255))
+	fs := flag.NewFlagSet("test", flag.PanicOnError)
+	fs.SetOutput(output)
+	_ = fs.String(defaultFlag, defaultValue, "testing default value")
+	if err := ParseFlagSet(nil, fs); err != nil {
+		t.Fatalf("parsing failed: %v", err)
 	}
-	if changedBool != *envBool {
-		t.Errorf("bool flag override failed. want %t, got %t", changedBool, *envBool)
+	fs.Usage()
+	usage := output.String()
+	t.Logf("usage:\n%s", usage)
+	if !strings.Contains(usage, "Also set by environment variable") {
+		t.Errorf("usage not updated to reflect being set by environment variable")
 	}
-	if changedInt != *envInt {
-		t.Errorf("int flag override failed. want %d, got %d", changedInt, *envInt)
+	output.Reset()
+	fs.PrintDefaults()
+	defs := output.String()
+	t.Logf("defaults:\n%s", defs)
+}
+
+func TestBadEnvironmentVariablePanics(t *testing.T) {
+	fs := flag.NewFlagSet("test", flag.PanicOnError)
+	_ = fs.Duration(defaultFlag, 1*time.Second, "testing bad value")
+	t.Setenv(strings.ToUpper(defaultFlag), defaultValue)
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic but was none")
+		}
+	}()
+	_ = ParseFlagSet(nil, fs)
+}
+
+func TestParseCallOrder(t *testing.T) {
+	t.Parallel()
+	fs := flag.NewFlagSet("test", flag.PanicOnError)
+	_ = fs.String(defaultFlag, defaultValue, "testing default value")
+	if err := fs.Parse(nil); err != nil {
+		t.Errorf("flagset parse failed: %v", err)
+	}
+	if err := ParseFlagSet(nil, fs); err == nil {
+		t.Errorf("already parsed flagset. want: %v, got: %v", nil, err)
 	}
 }
