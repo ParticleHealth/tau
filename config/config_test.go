@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	badFlag      = "@!@!@!@"
 	defaultFlag  = "flag-default"
 	defaultValue = "default"
 	setFlag      = "flag-set"

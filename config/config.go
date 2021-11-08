@@ -29,7 +29,7 @@ func override(fs *flag.FlagSet, name string) error {
 
 // Parse parses the command-line flags from os.Args[1:]. Must be called
 // after all flags are defined, before calls to package flag Parse functions
-//  and before flags are accessed by the program.
+// and before flags are accessed by the program.
 func Parse() error {
 	return ParseFlagSet(os.Args[1:], flag.CommandLine)
 }
