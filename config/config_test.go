@@ -72,16 +72,13 @@ func TestUpdatedUsage(t *testing.T) {
 	t.Logf("defaults:\n%s", defs)
 }
 
-func TestBadEnvironmentVariablePanics(t *testing.T) {
+func TestBadEnvironmentVariableErrors(t *testing.T) {
 	fs := flag.NewFlagSet("test", flag.PanicOnError)
 	_ = fs.Duration(defaultFlag, 1*time.Second, "testing bad value")
 	t.Setenv(strings.ToUpper(defaultFlag), defaultValue)
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic but was none")
-		}
-	}()
-	_ = ParseFlagSet(nil, fs)
+	if err := ParseFlagSet(nil, fs); err == nil {
+		t.Error("expected error but got none")
+	}
 }
 
 func TestParseCallOrder(t *testing.T) {

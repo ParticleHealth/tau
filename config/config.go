@@ -9,19 +9,21 @@ import (
 )
 
 // updateUsage to reflect ability to set via environment variable.
-func updateUsage(name string, value interface{}, usage string) string {
-	return fmt.Sprintf("%s\nAlso set by environment variable %s=%T", usage, strings.ToUpper(name), value)
+func updateUsage(name, usage string) string {
+	return fmt.Sprintf("%s\nAlso set by environment variable %s", usage, strings.ToUpper(name))
 }
 
 // override a flag value based on an environment variable being set.
-func override(fs *flag.FlagSet, name string) {
+func override(fs *flag.FlagSet, name string) error {
 	env := strings.ToUpper(name)
 	if v, ok := os.LookupEnv(env); ok {
 		err := fs.Set(name, v)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("could not set %s to %s: %w", name, v, err)
 		}
 	}
+
+	return nil
 }
 
 func Parse() error {
@@ -32,10 +34,16 @@ func ParseFlagSet(args []string, fs *flag.FlagSet) error {
 	if fs.Parsed() {
 		return errors.New("config.Parse can only be called once and before flag package Parse")
 	}
+	var errs []string
 	fs.VisitAll(func(f *flag.Flag) {
-		override(fs, f.Name)
-		f.Usage = updateUsage(f.Name, f.Value, f.Usage)
+		if err := override(fs, f.Name); err != nil {
+			errs = append(errs, err.Error())
+		}
+		f.Usage = updateUsage(f.Name, f.Usage)
 	})
+	if len(errs) != 0 {
+		return fmt.Errorf("parsing flags: %s", strings.Join(errs, "; "))
+	}
 
 	return fs.Parse(args)
 }
