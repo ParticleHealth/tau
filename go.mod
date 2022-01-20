@@ -3,7 +3,7 @@ module github.com/ParticleHealth/tau
 go 1.17
 
 require (
-	github.com/google/go-cmp v0.5.6
+	github.com/google/go-cmp v0.5.7
 	go.opencensus.io v0.23.0
 )
 
