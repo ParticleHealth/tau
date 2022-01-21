@@ -41,7 +41,7 @@ var (
 // Logger used to write structured logs in a thread-safe manner to a given output.
 type Logger struct {
 	mu      sync.Mutex // ensures atomic writes
-	out     io.Writer
+	encoder *json.Encoder
 	sources bool
 	project string
 }
@@ -261,7 +261,7 @@ func (l *Logger) WithDetails(details Fields) *Entry {
 
 // newLogger with provided options.
 func newLogger(out io.Writer) *Logger {
-	return &Logger{out: out, sources: true}
+	return &Logger{encoder: json.NewEncoder(out), sources: true}
 }
 
 // entry creates a new Entry allowing for reusing details across multiple log calls.
@@ -273,7 +273,7 @@ func (l *Logger) entry() *Entry {
 func (l *Logger) SetOutput(w io.Writer) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.out = w
+	l.encoder = json.NewEncoder(w)
 }
 
 // SetOutput destination for the package-level logger.
@@ -343,10 +343,8 @@ func (l *Logger) log(e *Entry, s severity, m string, depth int) {
 	e.Message = m
 	e.SourceLocation = source
 
-	if b, err := json.Marshal(e); err != nil {
-		fmt.Fprintln(l.out, "could not marshal log:", err)
-	} else {
-		fmt.Fprintln(l.out, string(b))
+	if err := l.encoder.Encode(e); err != nil {
+		fmt.Fprintln(os.Stderr, "could not marshal log:", err)
 	}
 }
 

@@ -2,6 +2,8 @@ package slog
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -44,5 +46,25 @@ func BenchmarkSources(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		logger.Info(benchmarkMessage)
+		buf.Reset()
+	}
+}
+
+func BenchmarkLargeLog(b *testing.B) {
+	buf := bytes.NewBuffer(make([]byte, 5*1024*1024)) // 5MB
+	bigDetail := map[string]string{}
+	var bigString strings.Builder
+	for i := 0; i < 100; i++ {
+		_, _ = bigString.WriteString("hello world")
+	}
+	for c := 'a'; c <= 'z'; c++ {
+		key := fmt.Sprint(c, c, c, c, c, c, c, c, c, c)
+		bigDetail[key] = bigString.String()
+	}
+	logger := newLogger(buf)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		logger.WithDetail("big", bigDetail).Info(benchmarkMessage)
+		buf.Reset()
 	}
 }
