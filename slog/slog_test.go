@@ -435,3 +435,11 @@ func TestContext(t *testing.T) {
 		t.Errorf("failed to retrieve correct entry from context:\n%s", diff)
 	}
 }
+
+func TestRaces(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		go Info("hello")
+		go Info("hello")
+		go Info("hello")
+	}
+}
