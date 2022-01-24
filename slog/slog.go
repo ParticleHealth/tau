@@ -35,6 +35,7 @@ var (
 	std      = newLogger(os.Stdout)
 	base     = std.entry()
 	sources  = make(map[uintptr]*SourceLocation)
+	sourceMu sync.RWMutex
 	entryKey key
 )
 
@@ -313,10 +314,15 @@ func getSource(depth int) *SourceLocation {
 	if !ok {
 		return nil
 	}
-	if s := sources[pc]; s != nil {
+	sourceMu.RLock()
+	s := sources[pc]
+	sourceMu.RUnlock()
+	if s != nil {
 		return s
 	}
-	s := &SourceLocation{
+	sourceMu.Lock()
+	defer sourceMu.Unlock()
+	s = &SourceLocation{
 		File: file,
 		Line: fmt.Sprint(line),
 	}
