@@ -399,7 +399,7 @@ func TestSpans(t *testing.T) {
 	}
 	_, span := trace.StartSpan(context.Background(), "testSpan")
 	// Package level
-	e := WithSpan(span)
+	e := WithSpan(span.SpanContext())
 	e.Info("testing")
 	got = buf.String()
 	buf.Reset()
@@ -410,7 +410,7 @@ func TestSpans(t *testing.T) {
 		t.Errorf("package: span not present: %s", got)
 	}
 	// Logger level
-	e = std.WithSpan(span)
+	e = std.WithSpan(span.SpanContext())
 	e.Info("testing")
 	got = buf.String()
 	buf.Reset()
