@@ -161,22 +161,22 @@ func (l *Logger) WithOperation(id, producer string) *Entry {
 }
 
 // WithSpan details included for a given Trace. Will create a child entry.
-func (e *Entry) WithSpan(s *trace.Span) *Entry {
+func (e *Entry) WithSpan(sc trace.SpanContext) *Entry {
 	c := e.clone()
-	c.Trace = fmt.Sprint("projects/", e.logger.project, "/traces/", s.SpanContext().TraceID)
-	c.SpanID = s.SpanContext().SpanID.String()
-	c.TraceSampled = s.SpanContext().IsSampled()
+	c.Trace = fmt.Sprint("projects/", e.logger.project, "/traces/", sc.TraceID)
+	c.SpanID = sc.SpanID.String()
+	c.TraceSampled = sc.IsSampled()
 	return c
 }
 
 // WithSpan details included for a given Trace. Will create a child entry.
-func WithSpan(s *trace.Span) *Entry {
-	return std.entry().WithSpan(s)
+func WithSpan(sc trace.SpanContext) *Entry {
+	return std.entry().WithSpan(sc)
 }
 
 // WithSpan details included for a given Trace. Will create a child entry.
-func (l *Logger) WithSpan(s *trace.Span) *Entry {
-	return l.entry().WithSpan(s)
+func (l *Logger) WithSpan(sc trace.SpanContext) *Entry {
+	return l.entry().WithSpan(sc)
 }
 
 // WithLabels for a given Entry. Will create a child entry.

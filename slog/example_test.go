@@ -56,6 +56,6 @@ func ExampleWithLabels() {
 
 func ExampleWithSpan() {
 	_, span := trace.StartSpan(context.Background(), "spanName")
-	entry := WithSpan(span)
+	entry := WithSpan(span.SpanContext())
 	entry.Info("entry with span")
 }
