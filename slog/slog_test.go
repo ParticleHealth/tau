@@ -3,6 +3,7 @@ package slog
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -383,6 +384,47 @@ func TestDetails(t *testing.T) {
 	got = buf.String()
 	if !strings.Contains(got, "details") {
 		t.Errorf("labels not included\ngot: %v", got)
+	}
+}
+
+func TestStack(t *testing.T) {
+	// Logger level
+	buf.Reset()
+	e := std.WithStack()
+	e.Info("testing")
+	got := buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "stack") {
+		t.Errorf("stack not included\ngot: %v", got)
+	}
+	ee := Entry{}
+	err := json.Unmarshal([]byte(got), &ee)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ee.Stack != "" {
+		t.Errorf("invalid stack\ngot: %v", got)
+	}
+	// Entry level
+	e = std.entry().WithStack()
+	e.Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if !strings.Contains(got, "stack") {
+		t.Errorf("stack not included\ngot: %v", got)
+	}
+	Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if strings.Contains(got, "stack") {
+		t.Errorf("stack persists when they shouldn't\ngot: %v", got)
+	}
+	// Package level
+	e = WithStack()
+	e.Info("testing")
+	got = buf.String()
+	if !strings.Contains(got, "stack") {
+		t.Errorf("stack not included\ngot: %v", got)
 	}
 }
 

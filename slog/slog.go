@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"sync"
 
 	"go.opencensus.io/trace"
@@ -61,6 +62,7 @@ type Entry struct {
 	TraceSampled   bool              `json:"logging.googleapis.com/trace_sampled,omitempty"`
 	Details        Fields            `json:"details,omitempty"`
 	Err            string            `json:"error,omitempty"`
+	Stack          string            `json:"stack,omitempty"`
 }
 
 // SourceLocation that originated the log call.
@@ -258,6 +260,23 @@ func WithDetails(details Fields) *Entry {
 // WithDetails for a given Entry. Will create a child entry.
 func (l *Logger) WithDetails(details Fields) *Entry {
 	return l.entry().WithDetails(details)
+}
+
+// WithStack included. Will create a child entry.
+func (e *Entry) WithStack() *Entry {
+	c := e.clone()
+	c.Stack = string(debug.Stack())
+	return c
+}
+
+// WithStack included. Will create a child entry.
+func WithStack() *Entry {
+	return std.WithStack()
+}
+
+// WithStack included. Will create a child entry.
+func (l *Logger) WithStack() *Entry {
+	return l.entry().WithStack()
 }
 
 // newLogger with provided options.
