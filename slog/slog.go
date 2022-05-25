@@ -62,7 +62,7 @@ type Entry struct {
 	TraceSampled   bool              `json:"logging.googleapis.com/trace_sampled,omitempty"`
 	Details        Fields            `json:"details,omitempty"`
 	Err            string            `json:"error,omitempty"`
-	Stack          string            `json:"stack,omitempty"`
+	Stack          string            `json:"exception,omitempty"`
 }
 
 // SourceLocation that originated the log call.
