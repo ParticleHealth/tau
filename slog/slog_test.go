@@ -394,37 +394,59 @@ func TestStack(t *testing.T) {
 	e.Info("testing")
 	got := buf.String()
 	buf.Reset()
-	if !strings.Contains(got, "stack") {
-		t.Errorf("stack not included\ngot: %v", got)
+	if !strings.Contains(got, "exception") {
+		t.Errorf("exception not included\ngot: %v", got)
 	}
 	ee := Entry{}
 	err := json.Unmarshal([]byte(got), &ee)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if ee.Stack != "" {
-		t.Errorf("invalid stack\ngot: %v", got)
+	if err == nil {
+		firstFrame := strings.Split(ee.StackTrace, "\n")[3]
+		if !strings.HasPrefix(firstFrame, "github.com/ParticleHealth/tau/slog.TestStack") {
+			t.Errorf("stack trace is incorrect\ngot: %v", firstFrame)
+		}
+	} else {
+		t.Errorf("error parsing log entry: %v", err)
 	}
 	// Entry level
 	e = std.entry().WithStack()
 	e.Info("testing")
 	got = buf.String()
 	buf.Reset()
-	if !strings.Contains(got, "stack") {
-		t.Errorf("stack not included\ngot: %v", got)
+	if !strings.Contains(got, "exception") {
+		t.Errorf("exception not included\ngot: %v", got)
+	}
+	ee = Entry{}
+	err = json.Unmarshal([]byte(got), &ee)
+	if err == nil {
+		firstFrame := strings.Split(ee.StackTrace, "\n")[3]
+		if !strings.HasPrefix(firstFrame, "github.com/ParticleHealth/tau/slog.TestStack") {
+			t.Errorf("stack trace is incorrect\ngot: %v", firstFrame)
+		}
+	} else {
+		t.Errorf("error parsing log entry: %v", err)
 	}
 	Info("testing")
 	got = buf.String()
 	buf.Reset()
-	if strings.Contains(got, "stack") {
-		t.Errorf("stack persists when they shouldn't\ngot: %v", got)
+	if strings.Contains(got, "exception") {
+		t.Errorf("exception persists when they shouldn't\ngot: %v", got)
 	}
 	// Package level
 	e = WithStack()
 	e.Info("testing")
 	got = buf.String()
-	if !strings.Contains(got, "stack") {
-		t.Errorf("stack not included\ngot: %v", got)
+	if !strings.Contains(got, "exception") {
+		t.Errorf("exception not included\ngot: %v", got)
+	}
+	ee = Entry{}
+	err = json.Unmarshal([]byte(got), &ee)
+	if err == nil {
+		firstFrame := strings.Split(ee.StackTrace, "\n")[3]
+		if !strings.HasPrefix(firstFrame, "github.com/ParticleHealth/tau/slog.TestStack") {
+			t.Errorf("stack trace is incorrect\ngot: %v", firstFrame)
+		}
+	} else {
+		t.Errorf("error parsing log entry: %v", err)
 	}
 }
 

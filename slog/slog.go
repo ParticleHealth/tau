@@ -2,13 +2,13 @@
 package slog
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"runtime"
-	"runtime/debug"
 	"sync"
 
 	"go.opencensus.io/trace"
@@ -20,6 +20,7 @@ type severity string
 type key int
 
 type Fields map[string]interface{}
+type stack []uintptr
 
 const (
 	severityDebug     severity = "DEBUG"
@@ -52,6 +53,7 @@ type Logger struct {
 // See https://cloud.google.com/logging/docs/agent/configuration#special-fields for reference.
 type Entry struct {
 	logger         *Logger
+	stack          stack
 	Message        string            `json:"message"`
 	Severity       severity          `json:"severity,omitempty"`
 	Labels         map[string]string `json:"logging.googleapis.com/labels,omitempty"`
@@ -62,7 +64,7 @@ type Entry struct {
 	TraceSampled   bool              `json:"logging.googleapis.com/trace_sampled,omitempty"`
 	Details        Fields            `json:"details,omitempty"`
 	Err            string            `json:"error,omitempty"`
-	Stack          string            `json:"exception,omitempty"`
+	StackTrace     string            `json:"exception,omitempty"`
 }
 
 // SourceLocation that originated the log call.
@@ -262,21 +264,28 @@ func (l *Logger) WithDetails(details Fields) *Entry {
 	return l.entry().WithDetails(details)
 }
 
-// WithStack included. Will create a child entry.
-func (e *Entry) WithStack() *Entry {
+func (e *Entry) withStack(skip int) *Entry {
 	c := e.clone()
-	c.Stack = string(debug.Stack())
+	const depth = 16
+	var pcs [depth]uintptr
+	n := runtime.Callers(skip, pcs[:])
+	c.stack = pcs[0:n]
 	return c
 }
 
 // WithStack included. Will create a child entry.
+func (e *Entry) WithStack() *Entry {
+	return e.withStack(3)
+}
+
+// WithStack included. Will create a child entry.
 func WithStack() *Entry {
-	return std.WithStack()
+	return std.entry().withStack(3)
 }
 
 // WithStack included. Will create a child entry.
 func (l *Logger) WithStack() *Entry {
-	return l.entry().WithStack()
+	return l.entry().withStack(3)
 }
 
 // newLogger with provided options.
@@ -353,6 +362,22 @@ func getSource(depth int) *SourceLocation {
 	return s
 }
 
+// format the stack as error reporting expects it.
+func formatStackTrace(errstr string, s stack) string {
+	buf := bytes.NewBuffer(make([]byte, 0, 1024))
+	fmt.Fprint(buf, errstr, ":\n\n")
+	fmt.Fprint(buf, "goroutine 0 [???]:\n")
+	frames := runtime.CallersFrames(s)
+	for {
+		frame, more := frames.Next()
+		fmt.Fprintf(buf, "%s(...)\n\t%s:%d\n", frame.Function, frame.File, frame.Line)
+		if !more {
+			break
+		}
+	}
+	return buf.String()
+}
+
 // log with given parameters.
 func (l *Logger) log(e *Entry, s severity, m string, depth int) {
 	// Do costly operations prior to grabbing mutex
@@ -361,12 +386,24 @@ func (l *Logger) log(e *Entry, s severity, m string, depth int) {
 		source = getSource(depth)
 	}
 
+	var stacktrace string
+	if len(e.stack) > 0 {
+		var errstr string
+		if len(e.Err) > 0 {
+			errstr = e.Err
+		} else {
+			errstr = m
+		}
+		stacktrace = formatStackTrace(errstr, e.stack)
+	}
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	e.Severity = s
 	e.Message = m
 	e.SourceLocation = source
+	e.StackTrace = stacktrace
 
 	if err := l.encoder.Encode(e); err != nil {
 		fmt.Fprintln(os.Stderr, "could not marshal log:", err)
