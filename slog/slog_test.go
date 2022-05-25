@@ -282,18 +282,18 @@ func TestError(t *testing.T) {
 	if !strings.Contains(got, "error") {
 		t.Errorf("error not included\ngot: %v", got)
 	}
-	if e.Err.Error() != errA.Error() {
-		t.Errorf("error not included\ngot: %v", e.Err.Error())
+	if e.Err != errA.Error() {
+		t.Errorf("error not included\ngot: %v", e.Err)
 	}
 	// Entry level
 	e = e.WithError(errB)
 	e.Info("testing")
 	buf.Reset()
-	if e.Err.Error() != errB.Error() {
-		t.Errorf("error not included\ngot: %v", e.Err.Error())
+	if e.Err != errB.Error() {
+		t.Errorf("error not included\ngot: %v", e.Err)
 	}
-	if e.Err.Error() == errA.Error() {
-		t.Errorf("error not included\ngot: %v", e.Err.Error())
+	if e.Err == errA.Error() {
+		t.Errorf("error not included\ngot: %v", e.Err)
 	}
 	Info("testing")
 	got = buf.String()
