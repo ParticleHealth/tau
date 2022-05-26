@@ -348,6 +348,17 @@ func TestError(t *testing.T) {
 	if e.Err != errA.Error() {
 		t.Errorf("error not included\ngot: %v", e.Err)
 	}
+	e = e.WithError(nil)
+	e.Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if strings.Contains(got, "error") {
+		t.Errorf("error persists when it shouldn't\ngot: %v", got)
+	}
+	if e.Err != "" {
+		t.Errorf("error got included\ngot: %v", e.Err)
+	}
+
 	// Entry level
 	e = e.WithError(errB)
 	e.Info("testing")
@@ -358,18 +369,41 @@ func TestError(t *testing.T) {
 	if e.Err == errA.Error() {
 		t.Errorf("error not included\ngot: %v", e.Err)
 	}
+	e = e.WithError(nil)
+	e.Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if strings.Contains(got, "error") {
+		t.Errorf("error persists when it shouldn't\ngot: %v", got)
+	}
+	if e.Err != "" {
+		t.Errorf("error got included\ngot: %v", e.Err)
+	}
+
 	Info("testing")
 	got = buf.String()
 	buf.Reset()
 	if strings.Contains(got, "error") {
-		t.Errorf("error persist when it shouldn't\ngot: %v", got)
+		t.Errorf("error persists when it shouldn't\ngot: %v", got)
 	}
+
 	// Package level
 	e = WithError(errA)
 	e.Info("testing")
 	got = buf.String()
+	buf.Reset()
 	if !strings.Contains(got, "error") {
 		t.Errorf("error not included\ngot: %v", got)
+	}
+	e = e.WithError(nil)
+	e.Info("testing")
+	got = buf.String()
+	buf.Reset()
+	if strings.Contains(got, "error") {
+		t.Errorf("error persists when it shouldn't\ngot: %v", got)
+	}
+	if e.Err != "" {
+		t.Errorf("error got included\ngot: %v", e.Err)
 	}
 }
 
