@@ -208,7 +208,11 @@ func (l *Logger) WithLabels(labels Fields) *Entry {
 // WithError for a given Entry. Will create a child entry.
 func (e *Entry) WithError(err error) *Entry {
 	c := e.clone()
-	c.Err = err.Error()
+	if err != nil {
+		c.Err = err.Error()
+	} else {
+		c.Err = ""
+	}
 	return c
 }
 
