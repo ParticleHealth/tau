@@ -557,145 +557,145 @@ func (e *Entry) Warnf(format string, v ...interface{}) {
 // Error sends a message to the logger with severity Error.
 // Arguments are handled in the manner of fmt.Print.
 func (l *Logger) Error(v ...interface{}) {
-	l.log(base, severityError, fmt.Sprint(v...), 2)
+	l.log(base.withStack(3), severityError, fmt.Sprint(v...), 2)
 }
 
 // Error sends a message to the default logger with severity Error.
 // Arguments are handled in the manner of fmt.Print.
 func Error(v ...interface{}) {
-	std.log(base, severityError, fmt.Sprint(v...), 2)
+	std.log(base.withStack(3), severityError, fmt.Sprint(v...), 2)
 }
 
 // Error sends a message to the logger associated with this entry with severity Error.
 // Arguments are handled in the manner of fmt.Print.
 func (e *Entry) Error(v ...interface{}) {
-	e.logger.log(e, severityError, fmt.Sprint(v...), 2)
+	e.logger.log(e.withStack(3), severityError, fmt.Sprint(v...), 2)
 }
 
 // Errorf sends a message to the logger with severity Error.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Logger) Errorf(format string, v ...interface{}) {
-	l.log(base, severityError, fmt.Sprintf(format, v...), 2)
+	l.log(base.withStack(3), severityError, fmt.Sprintf(format, v...), 2)
 }
 
 // Errorf sends a message to the default logger with severity Error.
 // Arguments are handled in the manner of fmt.Printf.
 func Errorf(format string, v ...interface{}) {
-	std.log(base, severityError, fmt.Sprintf(format, v...), 2)
+	std.log(base.withStack(3), severityError, fmt.Sprintf(format, v...), 2)
 }
 
 // Errorf sends a message to the logger associated with this entry with severity Error.
 // Arguments are handled in the manner of fmt.Printf.
 func (e *Entry) Errorf(format string, v ...interface{}) {
-	e.logger.log(e, severityError, fmt.Sprintf(format, v...), 2)
+	e.logger.log(e.withStack(3), severityError, fmt.Sprintf(format, v...), 2)
 }
 
 // Critical sends a message to the logger with severity Critical.
 // Arguments are handled in the manner of fmt.Print.
 func (l *Logger) Critical(v ...interface{}) {
-	l.log(base, severityCritical, fmt.Sprint(v...), 2)
+	l.log(base.withStack(3), severityCritical, fmt.Sprint(v...), 2)
 }
 
 // Critical sends a message to the default logger with severity Critical.
 // Arguments are handled in the manner of fmt.Print.
 func Critical(v ...interface{}) {
-	std.log(base, severityCritical, fmt.Sprint(v...), 2)
+	std.log(base.withStack(3), severityCritical, fmt.Sprint(v...), 2)
 }
 
 // Critical sends a message to the logger associated with this entry with severity Critical.
 // Arguments are handled in the manner of fmt.Print.
 func (e *Entry) Critical(v ...interface{}) {
-	e.logger.log(e, severityCritical, fmt.Sprint(v...), 2)
+	e.logger.log(e.withStack(3), severityCritical, fmt.Sprint(v...), 2)
 }
 
 // Criticalf sends a message to the logger with severity Critical.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Logger) Criticalf(format string, v ...interface{}) {
-	l.log(base, severityCritical, fmt.Sprintf(format, v...), 2)
+	l.log(base.withStack(3), severityCritical, fmt.Sprintf(format, v...), 2)
 }
 
 // Criticalf sends a message to the default logger with severity Critical.
 // Arguments are handled in the manner of fmt.Printf.
 func Criticalf(format string, v ...interface{}) {
-	std.log(base, severityCritical, fmt.Sprintf(format, v...), 2)
+	std.log(base.withStack(3), severityCritical, fmt.Sprintf(format, v...), 2)
 }
 
 // Criticalf sends a message to the logger associated with this entry with severity Critical.
 // Arguments are handled in the manner of fmt.Printf.
 func (e *Entry) Criticalf(format string, v ...interface{}) {
-	e.logger.log(e, severityCritical, fmt.Sprintf(format, v...), 2)
+	e.logger.log(e.withStack(3), severityCritical, fmt.Sprintf(format, v...), 2)
 }
 
 // Alert sends a message to the logger with severity Alert.
 // Arguments are handled in the manner of fmt.Print.
 func (l *Logger) Alert(v ...interface{}) {
-	l.log(base, severityAlert, fmt.Sprint(v...), 2)
+	l.log(base.withStack(3), severityAlert, fmt.Sprint(v...), 2)
 }
 
 // Alert sends a message to the default logger with severity Alert.
 // Arguments are handled in the manner of fmt.Print.
 func Alert(v ...interface{}) {
-	std.log(base, severityAlert, fmt.Sprint(v...), 2)
+	std.log(base.withStack(3), severityAlert, fmt.Sprint(v...), 2)
 }
 
 // Alert sends a message to the logger associated with this entry with severity Alert.
 // Arguments are handled in the manner of fmt.Print.
 func (e *Entry) Alert(v ...interface{}) {
-	e.logger.log(e, severityAlert, fmt.Sprint(v...), 2)
+	e.logger.log(e.withStack(3), severityAlert, fmt.Sprint(v...), 2)
 }
 
 // Alertf sends a message to the logger with severity Alert.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Logger) Alertf(format string, v ...interface{}) {
-	l.log(base, severityAlert, fmt.Sprintf(format, v...), 2)
+	l.log(base.withStack(3), severityAlert, fmt.Sprintf(format, v...), 2)
 }
 
 // Alertf sends a message to the default logger with severity Alert.
 // Arguments are handled in the manner of fmt.Printf.
 func Alertf(format string, v ...interface{}) {
-	std.log(base, severityAlert, fmt.Sprintf(format, v...), 2)
+	std.log(base.withStack(3), severityAlert, fmt.Sprintf(format, v...), 2)
 }
 
 // Alertf sends a message to the logger associated with this entry with severity Alert.
 // Arguments are handled in the manner of fmt.Printf.
 func (e *Entry) Alertf(format string, v ...interface{}) {
-	e.logger.log(e, severityAlert, fmt.Sprintf(format, v...), 2)
+	e.logger.log(e.withStack(3), severityAlert, fmt.Sprintf(format, v...), 2)
 }
 
 // Emergency sends a message to the logger with severity Emergency.
 // Arguments are handled in the manner of fmt.Print.
 func (l *Logger) Emergency(v ...interface{}) {
-	l.log(base, severityEmergency, fmt.Sprint(v...), 2)
+	l.log(base.withStack(3), severityEmergency, fmt.Sprint(v...), 2)
 }
 
 // Emergency sends a message to the default logger with severity Emergency.
 // Arguments are handled in the manner of fmt.Print.
 func Emergency(v ...interface{}) {
-	std.log(base, severityEmergency, fmt.Sprint(v...), 2)
+	std.log(base.withStack(3), severityEmergency, fmt.Sprint(v...), 2)
 }
 
 // Emergency sends a message to the logger associated with this entry with severity Emergency.
 // Arguments are handled in the manner of fmt.Print.
 func (e *Entry) Emergency(v ...interface{}) {
-	e.logger.log(e, severityEmergency, fmt.Sprint(v...), 2)
+	e.logger.log(e.withStack(3), severityEmergency, fmt.Sprint(v...), 2)
 }
 
 // Emergencyf sends a message to the logger with severity Emergency.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Logger) Emergencyf(format string, v ...interface{}) {
-	l.log(base, severityEmergency, fmt.Sprintf(format, v...), 2)
+	l.log(base.withStack(3), severityEmergency, fmt.Sprintf(format, v...), 2)
 }
 
 // Emergencyf sends a message to the default logger with severity Emergency.
 // Arguments are handled in the manner of fmt.Printf.
 func Emergencyf(format string, v ...interface{}) {
-	std.log(base, severityEmergency, fmt.Sprintf(format, v...), 2)
+	std.log(base.withStack(3), severityEmergency, fmt.Sprintf(format, v...), 2)
 }
 
 // Emergencyf sends a message to the logger associated with this entry with severity Emergency.
 // Arguments are handled in the manner of fmt.Printf.
 func (e *Entry) Emergencyf(format string, v ...interface{}) {
-	e.logger.log(e, severityEmergency, fmt.Sprintf(format, v...), 2)
+	e.logger.log(e.withStack(3), severityEmergency, fmt.Sprintf(format, v...), 2)
 }
 
 // NewContext returns a new Context that carries an entry.

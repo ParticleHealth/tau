@@ -125,6 +125,65 @@ func TestFormats(t *testing.T) {
 	subTestFormat(t, std.Emergencyf)
 }
 
+func subTestStack(t *testing.T, got string, wantFrame string) {
+	t.Helper()
+	if !strings.Contains(got, "exception") {
+		t.Errorf("message missing exception\ngot: %s", got)
+		return
+	}
+
+	firstFrame, err := getFirstFrame(got)
+	if err != nil {
+		t.Errorf("error parsing log entry: %v", err)
+	} else {
+		if !strings.HasPrefix(firstFrame, wantFrame) {
+			t.Errorf("stack trace is incorrect\ngot: %v", firstFrame)
+		}
+	}
+}
+func subTestDefaultStackFormat(t *testing.T, f func(string, ...interface{})) {
+	t.Helper()
+	buf.Reset()
+	f(formattedMessage, true)
+	subTestStack(t, buf.String(), "github.com/ParticleHealth/tau/slog.subTestDefaultStackFormat")
+}
+
+func subTestDefaultStack(t *testing.T, f func(...interface{})) {
+	t.Helper()
+	buf.Reset()
+	f(defaultMessage)
+	subTestStack(t, buf.String(), "github.com/ParticleHealth/tau/slog.subTestDefaultStack")
+}
+
+func TestDefaultStack(t *testing.T) {
+	subTestDefaultStack(t, Error)
+	subTestDefaultStack(t, base.Error)
+	subTestDefaultStack(t, std.Error)
+	subTestDefaultStack(t, Critical)
+	subTestDefaultStack(t, base.Critical)
+	subTestDefaultStack(t, std.Critical)
+	subTestDefaultStack(t, Alert)
+	subTestDefaultStack(t, base.Alert)
+	subTestDefaultStack(t, std.Alert)
+	subTestDefaultStack(t, Emergency)
+	subTestDefaultStack(t, base.Emergency)
+	subTestDefaultStack(t, std.Emergency)
+
+	subTestDefaultStackFormat(t, Errorf)
+	subTestDefaultStackFormat(t, base.Errorf)
+	subTestDefaultStackFormat(t, std.Errorf)
+	subTestDefaultStackFormat(t, Criticalf)
+	subTestDefaultStackFormat(t, base.Criticalf)
+	subTestDefaultStackFormat(t, std.Criticalf)
+	subTestDefaultStackFormat(t, Alertf)
+	subTestDefaultStackFormat(t, base.Alertf)
+	subTestDefaultStackFormat(t, std.Alertf)
+	subTestDefaultStackFormat(t, Emergencyf)
+	subTestDefaultStackFormat(t, base.Emergencyf)
+	subTestDefaultStackFormat(t, std.Emergencyf)
+	buf.Reset()
+}
+
 func TestSettingProject(t *testing.T) {
 	if std.project != "" {
 		t.Errorf("unexpected project for default logger\nwant:\ngot: %v", std.project)
@@ -387,67 +446,47 @@ func TestDetails(t *testing.T) {
 	}
 }
 
+func getFirstFrame(log string) (string, error) {
+	e := Entry{}
+	err := json.Unmarshal([]byte(log), &e)
+	if err == nil {
+		traceLines := strings.Split(e.StackTrace, "\n")
+		if len(traceLines) > 3 {
+			return traceLines[3], nil
+		} else {
+			return "", errors.New("stacktrace missing frames")
+		}
+	} else {
+		return "", err
+	}
+}
+
 func TestStack(t *testing.T) {
 	// Logger level
 	buf.Reset()
 	e := std.WithStack()
 	e.Info("testing")
-	got := buf.String()
-	buf.Reset()
-	if !strings.Contains(got, "exception") {
-		t.Errorf("exception not included\ngot: %v", got)
-	}
-	ee := Entry{}
-	err := json.Unmarshal([]byte(got), &ee)
-	if err == nil {
-		firstFrame := strings.Split(ee.StackTrace, "\n")[3]
-		if !strings.HasPrefix(firstFrame, "github.com/ParticleHealth/tau/slog.TestStack") {
-			t.Errorf("stack trace is incorrect\ngot: %v", firstFrame)
-		}
-	} else {
-		t.Errorf("error parsing log entry: %v", err)
-	}
+	subTestStack(t, buf.String(), "github.com/ParticleHealth/tau/slog.TestStack(...)")
+
 	// Entry level
+	buf.Reset()
 	e = std.entry().WithStack()
 	e.Info("testing")
-	got = buf.String()
+	subTestStack(t, buf.String(), "github.com/ParticleHealth/tau/slog.TestStack(...)")
+
 	buf.Reset()
-	if !strings.Contains(got, "exception") {
-		t.Errorf("exception not included\ngot: %v", got)
-	}
-	ee = Entry{}
-	err = json.Unmarshal([]byte(got), &ee)
-	if err == nil {
-		firstFrame := strings.Split(ee.StackTrace, "\n")[3]
-		if !strings.HasPrefix(firstFrame, "github.com/ParticleHealth/tau/slog.TestStack") {
-			t.Errorf("stack trace is incorrect\ngot: %v", firstFrame)
-		}
-	} else {
-		t.Errorf("error parsing log entry: %v", err)
-	}
 	Info("testing")
-	got = buf.String()
+	got := buf.String()
 	buf.Reset()
 	if strings.Contains(got, "exception") {
 		t.Errorf("exception persists when they shouldn't\ngot: %v", got)
 	}
+
 	// Package level
+	buf.Reset()
 	e = WithStack()
 	e.Info("testing")
-	got = buf.String()
-	if !strings.Contains(got, "exception") {
-		t.Errorf("exception not included\ngot: %v", got)
-	}
-	ee = Entry{}
-	err = json.Unmarshal([]byte(got), &ee)
-	if err == nil {
-		firstFrame := strings.Split(ee.StackTrace, "\n")[3]
-		if !strings.HasPrefix(firstFrame, "github.com/ParticleHealth/tau/slog.TestStack") {
-			t.Errorf("stack trace is incorrect\ngot: %v", firstFrame)
-		}
-	} else {
-		t.Errorf("error parsing log entry: %v", err)
-	}
+	subTestStack(t, buf.String(), "github.com/ParticleHealth/tau/slog.TestStack(...)")
 }
 
 func TestSpans(t *testing.T) {
