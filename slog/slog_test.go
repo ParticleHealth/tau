@@ -3,6 +3,7 @@ package slog
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -122,6 +123,68 @@ func TestFormats(t *testing.T) {
 	subTestFormat(t, Emergencyf)
 	subTestFormat(t, base.Emergencyf)
 	subTestFormat(t, std.Emergencyf)
+}
+
+func subTestStack(t *testing.T, got string, wantErrMsg, wantFrame string) {
+	t.Helper()
+	if !strings.Contains(got, "exception") {
+		t.Errorf("message missing exception\ngot: %s", got)
+		return
+	}
+
+	errmsg, firstFrame, err := errorAndFirstFrame(got)
+	if err != nil {
+		t.Errorf("error parsing log entry: %v", err)
+	} else {
+		if !strings.HasPrefix(firstFrame, wantFrame) {
+			t.Errorf("stack trace is incorrect\nwant: %v\ngot: %v", wantFrame, firstFrame)
+		}
+		if !strings.HasPrefix(errmsg, wantErrMsg) {
+			t.Errorf("stack trace error message incorrect\nwant: %v\ngot: %v", wantErrMsg, errmsg)
+		}
+	}
+}
+func subTestDefaultStackFormat(t *testing.T, f func(string, ...interface{})) {
+	t.Helper()
+	buf.Reset()
+	f(formattedMessage, true)
+	subTestStack(t, buf.String(), fmt.Sprintf(formattedMessage, true), "github.com/ParticleHealth/tau/slog.subTestDefaultStackFormat")
+}
+
+func subTestDefaultStack(t *testing.T, f func(...interface{})) {
+	t.Helper()
+	buf.Reset()
+	f(defaultMessage)
+	subTestStack(t, buf.String(), defaultMessage, "github.com/ParticleHealth/tau/slog.subTestDefaultStack")
+}
+
+func TestDefaultStack(t *testing.T) {
+	subTestDefaultStack(t, Error)
+	subTestDefaultStack(t, base.Error)
+	subTestDefaultStack(t, std.Error)
+	subTestDefaultStack(t, Critical)
+	subTestDefaultStack(t, base.Critical)
+	subTestDefaultStack(t, std.Critical)
+	subTestDefaultStack(t, Alert)
+	subTestDefaultStack(t, base.Alert)
+	subTestDefaultStack(t, std.Alert)
+	subTestDefaultStack(t, Emergency)
+	subTestDefaultStack(t, base.Emergency)
+	subTestDefaultStack(t, std.Emergency)
+
+	subTestDefaultStackFormat(t, Errorf)
+	subTestDefaultStackFormat(t, base.Errorf)
+	subTestDefaultStackFormat(t, std.Errorf)
+	subTestDefaultStackFormat(t, Criticalf)
+	subTestDefaultStackFormat(t, base.Criticalf)
+	subTestDefaultStackFormat(t, std.Criticalf)
+	subTestDefaultStackFormat(t, Alertf)
+	subTestDefaultStackFormat(t, base.Alertf)
+	subTestDefaultStackFormat(t, std.Alertf)
+	subTestDefaultStackFormat(t, Emergencyf)
+	subTestDefaultStackFormat(t, base.Emergencyf)
+	subTestDefaultStackFormat(t, std.Emergencyf)
+	buf.Reset()
 }
 
 func TestSettingProject(t *testing.T) {
@@ -384,6 +447,50 @@ func TestDetails(t *testing.T) {
 	if !strings.Contains(got, "details") {
 		t.Errorf("labels not included\ngot: %v", got)
 	}
+}
+
+func errorAndFirstFrame(log string) (string, string, error) {
+	e := Entry{}
+	err := json.Unmarshal([]byte(log), &e)
+	if err == nil {
+		traceLines := strings.Split(e.StackTrace, "\n")
+		if len(traceLines) > 3 {
+			return traceLines[0], traceLines[3], nil
+		} else {
+			return "", "", errors.New("stacktrace missing frames")
+		}
+	} else {
+		return "", "", err
+	}
+}
+
+func TestStack(t *testing.T) {
+	logErr := errors.New("this is an error")
+	// Logger level
+	buf.Reset()
+	e := std.WithStack().WithError(logErr)
+	e.Info("testing")
+	subTestStack(t, buf.String(), logErr.Error(), "github.com/ParticleHealth/tau/slog.TestStack(...)")
+
+	// Entry level
+	buf.Reset()
+	e = std.entry().WithStack()
+	e.Info("testing")
+	subTestStack(t, buf.String(), "testing", "github.com/ParticleHealth/tau/slog.TestStack(...)")
+
+	buf.Reset()
+	Info("testing")
+	got := buf.String()
+	buf.Reset()
+	if strings.Contains(got, "exception") {
+		t.Errorf("exception persists when they shouldn't\ngot: %v", got)
+	}
+
+	// Package level
+	buf.Reset()
+	e = WithStack().WithError(logErr)
+	e.Info("testing")
+	subTestStack(t, buf.String(), logErr.Error(), "github.com/ParticleHealth/tau/slog.TestStack(...)")
 }
 
 func TestSpans(t *testing.T) {
